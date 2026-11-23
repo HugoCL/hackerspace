@@ -597,7 +597,7 @@ function ConversationDialog({
         {label}
       </DialogTrigger>
       <DialogBackdrop className="bg-foreground/55!" />
-      <DialogContent className="hs-dialog hs-dialog--drawer fixed inset-y-0 right-0 left-auto z-50 m-0! flex h-dvh! max-h-none! w-full! flex-col gap-0 overflow-hidden rounded-none! border-0! bg-background! p-0 shadow-none! sm:w-[420px]! sm:border-l! sm:border-border!">
+      <DialogContent className="hs-dialog hs-dialog--drawer fixed inset-y-0 right-0 left-auto z-50 m-0! flex h-dvh! max-h-none! w-full! flex-col gap-0 overflow-clip! rounded-none! border-0! bg-background! p-0 shadow-none! sm:w-[420px]! sm:border-l! sm:border-border!">
         {children}
       </DialogContent>
     </Dialog>

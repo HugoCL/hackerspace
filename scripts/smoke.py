@@ -40,6 +40,7 @@ STAMP = VENV / ".smoke-ready"
 ARTIFACTS = ROOT / "artifacts"
 PORT = int(os.environ.get("PORT", "3000"))
 URL = f"http://localhost:{PORT}"
+CATALOG_DATE = "2027-03-01T12:00:00Z"
 
 
 def port_open(port):
@@ -90,6 +91,7 @@ def check():
         browser = p.chromium.launch(headless=True)
         try:
             page = browser.new_page()
+            page.clock.set_fixed_time(CATALOG_DATE)
             page.on("pageerror", lambda err: page_errors.append(str(err)))
             try:
                 page.goto(URL, wait_until="domcontentloaded", timeout=120_000)

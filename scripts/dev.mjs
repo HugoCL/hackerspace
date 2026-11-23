@@ -22,8 +22,8 @@
 // A one-shot push seeds empty tables. Only anonymous local deployments
 // also complete pending migrations before serving the app. Set DEV_SEED=0
 // to skip preparation. Both pushes share the same deployment selectors.
-// Extra arguments are forwarded to `convex dev` only. They can change the target (--url,
-// --configure, --env-file), so when any are given auth preflight and seeding are skipped.
+// Extra arguments are forwarded to `convex dev` only. Auth preflight skips explicit target
+// overrides; seeding skips all extra arguments.
 // Stopping: convex cleans up `next dev` and the local backend only on SIGINT, so SIGINT, SIGTERM
 // and SIGHUP all send SIGINT to the running child, at most once. With a TTY a Ctrl-C already
 // reached the child from the terminal; if it is still alive 2 s later (a harness PTY may signal
@@ -208,7 +208,24 @@ const exitCode = ({ code, signal }) =>
   code ?? 128 + (constants.signals[signal] ?? 0);
 
 const extraArgs = process.argv.slice(2);
-if (extraArgs.length === 0) {
+const targetOptions = new Set([
+  "--admin-key",
+  "--cloud",
+  "--configure",
+  "--deployment",
+  "--dev-deployment",
+  "--env-file",
+  "--local",
+  "--prod",
+  "--project",
+  "--team",
+  "--url",
+]);
+const skipAuthPreflight = extraArgs.some((arg) => {
+  const option = arg.split("=", 1)[0];
+  return targetOptions.has(option) || option === "--help" || option === "-h";
+});
+if (!skipAuthPreflight) {
   if (mode.anonymous) {
     const init = await convex(["init"]);
     if (stopping || init.code !== 0) process.exit(exitCode(init));

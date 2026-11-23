@@ -128,8 +128,9 @@ def check():
                 presence = page.get_by_role("region", name="Presencia en vivo")
                 count = presence.locator("[aria-live=polite]")
                 cells = presence.locator("[data-filled=true]")
-                expect(count).to_have_text("1 mirando")
-                expect(cells).to_have_count(1)
+                expect(count).to_have_text("0 mirando")
+                expect(presence.get_by_text("+1 visitante", exact=True)).to_be_visible()
+                expect(cells).to_have_count(0)
                 expect(presence.get_by_role("button", name="Ver quién está mirando")).to_have_count(0)
                 expect(
                     sidebar.get_by_role("region", name="Equipos buscando gente").get_by_role(
@@ -150,13 +151,13 @@ def check():
                     other_page = other_context.new_page()
                     other_page.on("pageerror", lambda err: page_errors.append(str(err)))
                     other_page.goto(page.url, wait_until="domcontentloaded")
-                    expect(count).to_have_text("2 mirando")
-                    expect(cells).to_have_count(2)
-                    expect(cells.first).to_have_css("background-color", "rgb(234, 79, 18)")
+                    expect(presence.get_by_text("+2 visitantes", exact=True)).to_be_visible()
+                    expect(count).to_have_text("0 mirando")
+                    expect(cells).to_have_count(0)
                     presence.screenshot(path=str(ARTIFACTS / "presence-two-viewers.png"))
                     other_presence = other_page.get_by_role("region", name="Presencia en vivo")
-                    expect(other_presence.locator("[aria-live=polite]")).to_have_text("2 mirando")
-                    expect(other_presence.locator("[data-filled=true]").first).to_have_css(
+                    expect(other_presence.get_by_text("+2 visitantes", exact=True)).to_be_visible()
+                    expect(other_presence.locator("[data-filled=false]").first).to_have_css(
                         "transition-property", "none"
                     )
                     other_presence.screenshot(path=str(ARTIFACTS / "presence-mobile.png"))
@@ -168,22 +169,23 @@ def check():
                         path=str(ARTIFACTS / "profile-mobile.png"), full_page=True, style=clean_capture
                     )
                     other_page.goto("about:blank", wait_until="domcontentloaded")
-                    expect(count).to_have_text("1 mirando", timeout=5_000)
+                    expect(presence.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=5_000)
                 finally:
                     other_context.close()
-                expect(cells).to_have_count(1)
+                expect(cells).to_have_count(0)
                 extra_contexts = []
                 try:
                     for _ in range(8):
                         extra_context = browser.new_context()
                         extra_contexts.append(extra_context)
                         extra_context.new_page().goto(page.url, wait_until="domcontentloaded")
-                    expect(presence).to_have_text("9 mirando", timeout=20_000)
-                    expect(cells).to_have_count(8)
+                    expect(presence.get_by_text("+9 visitantes", exact=True)).to_be_visible(timeout=20_000)
+                    expect(count).to_have_text("0 mirando")
+                    expect(cells).to_have_count(0)
                 finally:
                     for extra_context in extra_contexts:
                         extra_context.close()
-                expect(count).to_have_text("1 mirando", timeout=20_000)
+                expect(presence.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=20_000)
                 assert not navigations, f"Presence updated after navigation: {navigations}"
                 presence.screenshot(path=str(ARTIFACTS / "presence-after-close.png"))
             finally:
@@ -199,7 +201,7 @@ def check():
         return 1
     print(
         f"PASS: {URL} connected to Convex, filtered events and opened a hackathon profile; "
-        "live viewer count changed 1 → 2 → 1 without reloading; "
+        "anonymous visitors changed 1 → 2 → 1 without filling the account grid; "
         "screenshot at artifacts/smoke.png"
     )
     return 0

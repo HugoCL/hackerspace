@@ -2,9 +2,11 @@ const cells = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export default function PresenceIndicator({
   count,
+  visitors = 0,
   announce = false,
 }: {
   count?: number;
+  visitors?: number;
   announce?: boolean;
 }) {
   const label =
@@ -36,6 +38,13 @@ export default function PresenceIndicator({
       >
         {label}
       </span>
+      {visitors > 0 && (
+        <span className="text-muted-foreground">
+          {visitors > 1000
+            ? "+1000 visitantes o más"
+            : `+${visitors} visitante${visitors === 1 ? "" : "s"}`}
+        </span>
+      )}
     </span>
   );
 }

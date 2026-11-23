@@ -19,7 +19,7 @@ async function setup() {
   return { t, hackathonId: event._id, otherId: other._id };
 }
 
-it("counts visitors without exposing them and deduplicates tabs by verified account", async () => {
+it("counts accounts separately from visitors and keeps the roster private", async () => {
   vi.useFakeTimers();
   try {
     const { t, hackathonId, otherId } = await setup();
@@ -56,42 +56,60 @@ it("counts visitors without exposing them and deduplicates tabs by verified acco
     ).rejects.toThrow("Invalid presence session");
     expect(anonymous.sessionToken).not.toBe(tabOne.sessionToken);
     expect(reloaded.sessionToken).not.toBe(anonymous.sessionToken);
-    expect(anonymous.roomToken).toBe(tabOne.roomToken);
-    const listArgs = { roomToken: tabOne.roomToken };
-    await expect(t.query(api.presence.count, { hackathonId })).resolves.toBe(2);
+    expect(anonymous.roomToken).not.toBe(tabOne.roomToken);
+    const listArgs = { hackathonId, roomToken: tabOne.roomToken };
+    await expect(t.query(api.presence.count, { hackathonId })).resolves.toEqual(
+      {
+        count: 1,
+        visitors: 1,
+      },
+    );
     await expect(
       t.query(api.presence.count, { hackathonId: otherId }),
-    ).resolves.toBe(1);
+    ).resolves.toEqual({ count: 0, visitors: 1 });
     await expect(t.query(api.presence.list, listArgs)).resolves.toEqual({
-      count: 2,
+      count: 1,
+      visitors: 1,
     });
     await expect(
       otherViewer.query(api.presence.list, listArgs),
     ).resolves.toEqual({
-      count: 2,
+      count: 1,
+      visitors: 1,
       viewers: [{ name: "Ana Morales", image: "https://example.com/ana.png" }],
     });
     await expect(
-      t.query(api.presence.list, { roomToken: differentRoom.roomToken }),
-    ).resolves.toEqual({ count: 1 });
+      t.query(api.presence.list, {
+        hackathonId: otherId,
+        roomToken: differentRoom.roomToken,
+      }),
+    ).resolves.toEqual({ count: 0, visitors: 1 });
+    await expect(
+      otherViewer.query(api.presence.list, {
+        hackathonId: otherId,
+        roomToken: tabOne.roomToken,
+      }),
+    ).resolves.toEqual({ count: 0, visitors: 1, viewers: [] });
 
     await t.mutation(api.presence.disconnect, {
       sessionToken: tabOne.sessionToken,
     });
     await expect(t.query(api.presence.list, listArgs)).resolves.toEqual({
-      count: 2,
+      count: 1,
+      visitors: 1,
     });
     await t.mutation(api.presence.disconnect, {
       sessionToken: tabTwo.sessionToken,
     });
     await expect(
       otherViewer.query(api.presence.list, listArgs),
-    ).resolves.toEqual({ count: 1, viewers: [] });
+    ).resolves.toEqual({ count: 0, visitors: 1, viewers: [] });
     await t.mutation(api.presence.disconnect, {
       sessionToken: anonymous.sessionToken,
     });
     await expect(t.query(api.presence.list, listArgs)).resolves.toEqual({
-      count: 1,
+      count: 0,
+      visitors: 1,
     });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   } finally {
@@ -108,14 +126,22 @@ it("stops counting a session that stops sending heartbeats", async () => {
       sessionId: crypto.randomUUID(),
       visitorId: crypto.randomUUID(),
     });
-    await expect(t.query(api.presence.list, { roomToken })).resolves.toEqual({
-      count: 1,
+    const listArgs = { hackathonId, roomToken };
+    await expect(t.query(api.presence.list, listArgs)).resolves.toEqual({
+      count: 0,
+      visitors: 1,
     });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
-    await expect(t.query(api.presence.list, { roomToken })).resolves.toEqual({
+    await expect(t.query(api.presence.list, listArgs)).resolves.toEqual({
       count: 0,
+      visitors: 0,
     });
-    await expect(t.query(api.presence.count, { hackathonId })).resolves.toBe(0);
+    await expect(t.query(api.presence.count, { hackathonId })).resolves.toEqual(
+      {
+        count: 0,
+        visitors: 0,
+      },
+    );
   } finally {
     vi.useRealTimers();
   }

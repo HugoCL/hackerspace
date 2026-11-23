@@ -107,7 +107,7 @@ function useHackathonPresence(hackathonId: Id<"hackathons">) {
     !isLoading &&
       room?.hackathonId === hackathonId &&
       room.isAuthenticated === isAuthenticated
-      ? { roomToken: room.roomToken }
+      ? { hackathonId, roomToken: room.roomToken }
       : "skip",
   );
 }
@@ -167,7 +167,11 @@ export default function HackathonPresence({
       aria-label="Presencia en vivo"
       className="flex flex-wrap items-center gap-x-3 gap-y-1"
     >
-      <PresenceIndicator announce count={attendance?.count} />
+      <PresenceIndicator
+        announce
+        count={attendance?.count}
+        visitors={attendance?.visitors}
+      />
       {viewers.length > 0 && (
         <Popover>
           <PopoverTrigger

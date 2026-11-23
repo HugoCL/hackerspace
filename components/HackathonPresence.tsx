@@ -1,11 +1,7 @@
 "use client";
 
-import {
-  Popover,
-  PopoverContent,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@ui-sdk/react/popover";
+import { useUser } from "@clerk/nextjs";
+import { Popover, PopoverContent, PopoverTitle } from "@ui-sdk/react/popover";
 import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -36,6 +32,8 @@ function browserVisitorId() {
 
 function useHackathonPresence(hackathonId: Id<"hackathons">) {
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const { user } = useUser();
+  const hasProfileImage = isAuthenticated ? user?.hasImage : undefined;
   const { url } = useConvex();
   const heartbeat = useMutation(api.presence.heartbeat);
   const disconnect = useMutation(api.presence.disconnect);
@@ -58,7 +56,12 @@ function useHackathonPresence(hackathonId: Id<"hackathons">) {
 
     async function sendHeartbeat() {
       try {
-        const result = await heartbeat({ hackathonId, sessionId, visitorId });
+        const result = await heartbeat({
+          hackathonId,
+          sessionId,
+          visitorId,
+          hasProfileImage,
+        });
         if (!active) {
           disconnectSession(result.sessionToken);
           return;
@@ -100,7 +103,15 @@ function useHackathonPresence(hackathonId: Id<"hackathons">) {
       window.removeEventListener("pagehide", onPageHide);
       if (sessionToken) disconnectSession(sessionToken);
     };
-  }, [disconnect, hackathonId, heartbeat, isAuthenticated, isLoading, url]);
+  }, [
+    disconnect,
+    hackathonId,
+    hasProfileImage,
+    heartbeat,
+    isAuthenticated,
+    isLoading,
+    url,
+  ]);
 
   return useQuery(
     api.presence.list,
@@ -125,11 +136,14 @@ function ViewerAvatar({ name, image }: { name: string; image?: string }) {
   )
     .slice(0, 2)
     .join("");
+  let tone = 0;
+  for (let i = 0; i < name.length; i++)
+    tone = (tone * 31 + name.charCodeAt(i)) % 4;
 
   return (
     <span
       aria-hidden="true"
-      className="hs-avatar hs-avatar--xs hs-avatar--t0 leading-none"
+      className={`hs-avatar hs-avatar--xs hs-avatar--t${tone}`}
     >
       {image && failedImage !== image ? (
         <Image
@@ -161,60 +175,66 @@ export default function HackathonPresence({
       : [];
   const count = attendance?.count ?? 0;
   const hiddenViewers = count - viewers.length;
+  const shown = viewers.slice(0, 3);
+  const indicator = (
+    <PresenceIndicator
+      announce
+      count={attendance?.count}
+      interactive={shown.length > 0}
+      visitors={attendance?.visitors}
+    >
+      {shown.length > 0 && (
+        <span aria-hidden="true" className="hs-avstack">
+          <span className="hs-avstack-faces">
+            {shown.map(({ name, image }, index) => (
+              <ViewerAvatar
+                // biome-ignore lint/suspicious/noArrayIndexKey: Profile names and pictures are not unique.
+                key={`${index}:${name}:${image ?? ""}`}
+                name={name}
+                image={image}
+              />
+            ))}
+          </span>
+          {count > shown.length && (
+            <span className="hs-avstack-more">
+              {count > 1000 ? "+…" : `+${count - shown.length}`}
+            </span>
+          )}
+        </span>
+      )}
+    </PresenceIndicator>
+  );
 
   return (
     <section
       aria-label="Presencia en vivo"
       className="flex flex-wrap items-center gap-x-3 gap-y-1"
     >
-      <PresenceIndicator
-        announce
-        count={attendance?.count}
-        visitors={attendance?.visitors}
-      >
-        {viewers.length > 0 && (
-          <Popover>
-            <PopoverTrigger
-              aria-label="Ver quién está mirando"
-              className="hs-avstack rounded-full"
-            >
-              <span className="hs-avstack-faces">
-                {viewers.slice(0, 3).map(({ name, image }, index) => (
-                  <ViewerAvatar
-                    // biome-ignore lint/suspicious/noArrayIndexKey: Profile names and pictures are not unique.
-                    key={`${index}:${name}:${image ?? ""}`}
-                    name={name}
-                    image={image}
-                  />
-                ))}
-              </span>
-              {count > 3 && (
-                <span aria-hidden="true" className="hs-avstack-more">
-                  {count > 1000 ? "+…" : `+${count - 3}`}
-                </span>
+      {shown.length > 0 ? (
+        <Popover>
+          {indicator}
+          <PopoverContent className="hs-popover">
+            <PopoverTitle className="hs-popover-title">
+              Personas mirando
+            </PopoverTitle>
+            <ul className="grid gap-1 text-sm">
+              {viewers.map(({ name, image }, index) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: Profile names and pictures are not unique.
+                <li key={`${index}:${name}:${image ?? ""}`}>{name}</li>
+              ))}
+              {hiddenViewers > 0 && (
+                <li className="text-muted-foreground">
+                  {count > 1000
+                    ? "y muchas personas más"
+                    : `y ${hiddenViewers} más`}
+                </li>
               )}
-            </PopoverTrigger>
-            <PopoverContent className="hs-popover">
-              <PopoverTitle className="hs-popover-title">
-                Personas mirando
-              </PopoverTitle>
-              <ul className="grid gap-1 text-sm">
-                {viewers.map(({ name, image }, index) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: Profile names and pictures are not unique.
-                  <li key={`${index}:${name}:${image ?? ""}`}>{name}</li>
-                ))}
-                {hiddenViewers > 0 && (
-                  <li className="text-muted-foreground">
-                    {count > 1000
-                      ? "y muchas personas más"
-                      : `y ${hiddenViewers} más`}
-                  </li>
-                )}
-              </ul>
-            </PopoverContent>
-          </Popover>
-        )}
-      </PresenceIndicator>
+            </ul>
+          </PopoverContent>
+        </Popover>
+      ) : (
+        indicator
+      )}
     </section>
   );
 }

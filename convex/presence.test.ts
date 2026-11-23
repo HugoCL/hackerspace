@@ -78,6 +78,17 @@ it("counts accounts separately from visitors and keeps the roster private", asyn
       visitors: 1,
       viewers: [{ name: "Ana Morales", image: "https://example.com/ana.png" }],
     });
+    await viewer.mutation(api.presence.heartbeat, {
+      ...args,
+      hasProfileImage: false,
+    });
+    await expect(
+      otherViewer.query(api.presence.list, listArgs),
+    ).resolves.toEqual({
+      count: 1,
+      visitors: 1,
+      viewers: [{ name: "Ana Morales" }],
+    });
     await expect(
       t.query(api.presence.list, {
         hackathonId: otherId,

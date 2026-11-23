@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { SampleEvent } from "@/app/hackathones/sample-events";
+import type { SampleEvent } from "@/app/hackathons/sample-events";
 
 const iconPaths = {
   arrow: "M4 12h15m-6-6 6 6-6 6",

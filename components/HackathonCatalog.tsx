@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from "@ui-sdk/react/tabs";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { useState } from "react";
-import type { SampleEvent } from "@/app/hackathones/sample-events";
+import type { SampleEvent } from "@/app/hackathons/sample-events";
 import { api } from "@/convex/_generated/api";
 import { EventMeta, Icon, ModalityBadge } from "./hackathon-ui";
 
@@ -23,7 +23,7 @@ function CatalogCard({ event }: { event: SampleEvent }) {
   return (
     <Link
       className="hs-card hs-card--interactive hs-hcard"
-      href={`/hackathones/${event.slug}`}
+      href={`/hackathons/${event.slug}`}
     >
       <div className="hs-hcard-top">
         <ModalityBadge modality={event.modality} />

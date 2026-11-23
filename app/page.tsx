@@ -1,6 +1,6 @@
 import Catalog from "@/components/HackathonCatalog";
 import { AppShell } from "@/components/hackathon-ui";
-import { sampleEvents } from "./hackathones/sample-events";
+import { sampleEvents } from "./hackathons/sample-events";
 
 export default function Home() {
   return (

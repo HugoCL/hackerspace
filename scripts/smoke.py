@@ -126,7 +126,7 @@ def check():
                     )
                 ).to_have_count(2)
                 page.get_by_role("link", name="Ver bases", exact=True).click()
-                expect(page).to_have_url(f"{URL}/hackathones/codigo-sin-fronteras#bases")
+                expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras#bases")
             finally:
                 # Always keep the screenshot, and never let a failure here hide the real error.
                 try:

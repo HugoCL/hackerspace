@@ -356,6 +356,17 @@ export const conversations = query({
   },
 });
 
+export const conversationContact = query({
+  args: { teamId: v.id("teams") },
+  handler: async (ctx, { teamId }) => {
+    if (!(await ctx.auth.getUserIdentity())) return null;
+    const team = await ctx.db.get("teams", teamId);
+    if (!team || team.recruitingStatus !== "recruiting") return null;
+    const owner = await ctx.db.get("users", team.ownerId);
+    return owner?.displayName ?? team.name;
+  },
+});
+
 export const conversation = query({
   args: { conversationId: v.id("teamConversations") },
   handler: async (ctx, { conversationId }) => {

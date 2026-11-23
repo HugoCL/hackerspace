@@ -24,19 +24,27 @@ it("can seed repeatedly without duplicating sample data", async () => {
   });
 });
 
-it("backfills role search for existing teams", async () => {
+it("converts existing team roles to bounded, searchable free text", async () => {
   const t = convexTest(schema, modules);
   migrations.register(t);
   await t.mutation(internal.seed.ensure, {});
   await t.run(async (ctx) => {
     const team = await ctx.db.query("teams").first();
     if (!team) throw new Error("Missing sample team");
-    await ctx.db.patch("teams", team._id, { searchableRoles: undefined });
+    await ctx.db.patch("teams", team._id, {
+      lookingFor: undefined,
+      searchableText: undefined,
+      rolesWanted: ["Frontend", "Diseño"],
+      searchableRoles: "Frontend Diseño",
+    });
   });
 
   await expect(t.mutation(internal.migrations.runAll, {})).resolves.toBeNull();
   const team = await t.run((ctx) => ctx.db.query("teams").first());
-  expect(team?.searchableRoles).toBe(team?.rolesWanted.join(" "));
+  expect(team?.lookingFor).toBe("Frontend, Diseño");
+  expect(team?.searchableText).toBe(`${team?.name} Frontend, Diseño`);
+  expect(team).not.toHaveProperty("rolesWanted");
+  expect(team).not.toHaveProperty("searchableRoles");
 });
 
 it("can reset a local deployment", async () => {

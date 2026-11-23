@@ -9,7 +9,7 @@ const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
 const details = {
   name: "Equipo Aurora",
   description: "Creamos un mapa de rutas.",
-  rolesWanted: ["Diseño", "Frontend"],
+  lookingFor: "Alguien que disfrute dibujar rutas y entrevistar vecinos.",
   recruitingStatus: "recruiting" as const,
 };
 
@@ -51,21 +51,31 @@ it("lists teams publicly, filters recruiting teams, and only lets the owner edit
     ...details,
   });
   expect((await t.query(api.teams.list, listArgs)).page).toEqual([
-    { _id: teamId, ...details },
+    { _id: teamId, ...details, memberCount: 1 },
   ]);
   expect(await t.query(api.teams.summary, { hackathonId })).toEqual({
     total: 1,
     recruiting: 1,
   });
   expect(
-    (await t.query(api.teams.list, { ...listArgs, role: "Frontend" })).page,
+    (await t.query(api.teams.list, { ...listArgs, search: "vecinos" })).page,
   ).toMatchObject([{ _id: teamId }]);
   expect(
-    (await t.query(api.teams.list, { ...listArgs, role: "Backend" })).page,
+    (await t.query(api.teams.list, { ...listArgs, search: "Aurora" })).page,
+  ).toMatchObject([{ _id: teamId }]);
+  expect(
+    (await t.query(api.teams.list, { ...listArgs, search: "Backend" })).page,
   ).toEqual([]);
   await expect(
     outsider.mutation(api.teams.update, { teamId, ...details }),
   ).rejects.toThrow("Solo el titular");
+  const tooLong = { ...details, lookingFor: "a".repeat(141) };
+  await expect(
+    owner.mutation(api.teams.create, { hackathonId, ...tooLong }),
+  ).rejects.toThrow("hasta 140 caracteres");
+  await expect(
+    owner.mutation(api.teams.update, { teamId, ...tooLong }),
+  ).rejects.toThrow("hasta 140 caracteres");
   await owner.mutation(api.teams.update, {
     teamId,
     ...details,
@@ -114,14 +124,17 @@ it("keeps messages private and lets only the owner add a member exactly once", a
   expect(await outsider.query(api.teams.viewerState, { teamId })).toEqual({
     kind: "visitor",
     conversationId: null,
+    conversationCount: null,
   });
   expect(await applicant.query(api.teams.viewerState, { teamId })).toEqual({
     kind: "visitor",
     conversationId,
+    conversationCount: null,
   });
   expect(await owner.query(api.teams.viewerState, { teamId })).toEqual({
     kind: "owner",
     conversationId: null,
+    conversationCount: 1,
   });
   const inbox = { teamId, paginationOpts };
   const history = { conversationId, paginationOpts };
@@ -193,7 +206,17 @@ it("keeps messages private and lets only the owner add a member exactly once", a
   expect(await applicant.query(api.teams.viewerState, { teamId })).toEqual({
     kind: "member",
     conversationId,
+    conversationCount: null,
   });
+  expect(
+    (
+      await t.query(api.teams.list, {
+        hackathonId,
+        recruitingOnly: false,
+        paginationOpts,
+      })
+    ).page,
+  ).toMatchObject([{ _id: teamId, memberCount: 2 }]);
   const other = await outsider.mutation(api.teams.startConversation, {
     teamId,
     body: "Hola equipo",

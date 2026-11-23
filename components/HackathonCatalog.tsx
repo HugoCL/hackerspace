@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from "@ui-sdk/react/tabs";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { useState } from "react";
+import { localCalendarDate } from "@/app/calendar-date";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { EventMeta, Icon, ModalityBadge } from "./hackathon-ui";
@@ -51,7 +52,7 @@ export default function HackathonCatalog() {
   const [query, setQuery] = useState("");
   const status = useQuery(api.health.status, {});
   const events = useQuery(api.hackathons.list, {
-    today: new Date().toISOString().slice(0, 10),
+    today: localCalendarDate(new Date()),
   });
   const term = searchText(query.trim());
   const matches = events?.filter((event) =>

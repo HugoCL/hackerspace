@@ -120,7 +120,7 @@ function TeamForm({
           {lookingFor.length} / {lookingForLimit} caracteres
         </FieldDescription>
       </Field>
-      <Field className="hs-check">
+      <Field className="hs-check flex-row">
         <Checkbox
           className="hs-check-input data-checked:border-primary! data-checked:bg-primary!"
           checked={recruiting}
@@ -704,7 +704,7 @@ export default function HackathonTeams({
             onValueChange={setSearch}
           />
         </Field>
-        <Field className="hs-check min-h-8 items-center!">
+        <Field className="hs-check min-h-8 flex-row items-center!">
           <Checkbox
             className="hs-check-input data-checked:border-primary! data-checked:bg-primary!"
             checked={recruitingOnly}

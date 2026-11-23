@@ -13,7 +13,7 @@ import {
   query,
 } from "./_generated/server";
 import { teamDetails } from "./schema";
-import { lookingForLimit, teamSearchText } from "./teamText";
+import { legacyLookingFor, lookingForLimit, teamSearchText } from "./teamText";
 
 async function findUser(ctx: QueryCtx | MutationCtx, identityKey: string) {
   return ctx.db
@@ -143,12 +143,19 @@ export const list = query({
       ...page,
       page: await Promise.all(
         page.page.map(
-          async ({ _id, name, description, lookingFor, recruitingStatus }) => ({
+          async ({
+            _id,
+            name,
+            description,
+            lookingFor,
+            rolesWanted,
+            recruitingStatus,
+          }) => ({
             _id,
             name,
             description,
             recruitingStatus,
-            lookingFor,
+            lookingFor: lookingFor ?? legacyLookingFor(rolesWanted),
             memberCount: (
               await ctx.db
                 .query("teamMembers")

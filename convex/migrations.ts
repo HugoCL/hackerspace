@@ -18,18 +18,14 @@ export const run = migrations.runner();
 export const backfillTeamLookingFor = migrations.define({
   table: "teams",
   migrateOne: (_ctx, team) => {
-    const legacy = team as typeof team & {
-      rolesWanted?: string[];
-      searchableRoles?: string;
-    };
     if (
-      legacy.rolesWanted === undefined &&
-      legacy.searchableRoles === undefined &&
+      team.rolesWanted === undefined &&
+      team.searchableRoles === undefined &&
       team.lookingFor !== undefined &&
       team.searchableText !== undefined
     )
       return;
-    const lookingFor = team.lookingFor ?? legacyLookingFor(legacy.rolesWanted);
+    const lookingFor = team.lookingFor ?? legacyLookingFor(team.rolesWanted);
     return {
       lookingFor,
       searchableText: teamSearchText(team.name, lookingFor),

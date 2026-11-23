@@ -155,7 +155,7 @@ export const list = query({
             name,
             description,
             recruitingStatus,
-            lookingFor: lookingFor ?? legacyLookingFor(rolesWanted),
+            lookingFor: lookingFor ?? legacyLookingFor(rolesWanted).text,
             memberCount: (
               await ctx.db
                 .query("teamMembers")

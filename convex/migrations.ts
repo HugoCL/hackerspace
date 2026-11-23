@@ -15,7 +15,7 @@ export const migrations = new Migrations<DataModel>(components.migrations);
 // `convex run migrations:run '{"fn":"migrations:<name>"}'` runs one migration by name.
 export const run = migrations.runner();
 
-export const backfillTeamLookingFor = migrations.define({
+export const migrateTeamLookingFor = migrations.define({
   table: "teams",
   migrateOne: (_ctx, team) => {
     if (
@@ -25,10 +25,14 @@ export const backfillTeamLookingFor = migrations.define({
       team.searchableText !== undefined
     )
       return;
-    const lookingFor = team.lookingFor ?? legacyLookingFor(team.rolesWanted);
+    const legacy = legacyLookingFor(team.rolesWanted);
+    const lookingFor = team.lookingFor ?? legacy.text;
     return {
       lookingFor,
       searchableText: teamSearchText(team.name, lookingFor),
+      ...(legacy.truncated && team.rolesWanted
+        ? { archivedRoles: team.rolesWanted }
+        : {}),
       rolesWanted: undefined,
       searchableRoles: undefined,
     };
@@ -40,7 +44,7 @@ export const runAll = internalMutation({
   args: {},
   handler: async (ctx) => {
     await migrations.runSerially(ctx, [
-      internal.migrations.backfillTeamLookingFor,
+      internal.migrations.migrateTeamLookingFor,
     ]);
     return null;
   },

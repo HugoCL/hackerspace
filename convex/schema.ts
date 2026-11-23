@@ -49,6 +49,7 @@ export default defineSchema({
     searchableText: v.optional(v.string()),
     rolesWanted: v.optional(v.array(v.string())),
     searchableRoles: v.optional(v.string()),
+    archivedRoles: v.optional(v.array(v.string())),
   })
     .index("by_hackathonId_and_recruitingStatus", [
       "hackathonId",

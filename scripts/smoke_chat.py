@@ -82,6 +82,10 @@ def check_chat(browser, url, owner_identifier, applicant_identifier):
                 time.sleep(3.1)
             send(owner_chat if number % 2 == 0 else applicant_chat, number)
 
+        owner.keyboard.press("Escape")
+        expect(inbox).to_be_focused()
+        inbox.press("Enter")
+        owner_chat.get_by_role("button").filter(has_text="Mensaje de prueba 21").press("Enter")
         history = owner_chat.get_by_role("region", name="Historial de mensajes")
         items = history.get_by_role("listitem")
         expect(items).to_have_count(20)

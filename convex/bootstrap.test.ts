@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import migrations from "@convex-dev/migrations/test";
 import { convexTest } from "convex-test";
 import { expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
@@ -23,10 +24,19 @@ it("can seed repeatedly without duplicating sample data", async () => {
   });
 });
 
-it("can run an empty migration list", async () => {
+it("backfills role search for existing teams", async () => {
   const t = convexTest(schema, modules);
+  migrations.register(t);
+  await t.mutation(internal.seed.ensure, {});
+  await t.run(async (ctx) => {
+    const team = await ctx.db.query("teams").first();
+    if (!team) throw new Error("Missing sample team");
+    await ctx.db.patch("teams", team._id, { searchableRoles: undefined });
+  });
 
   await expect(t.mutation(internal.migrations.runAll, {})).resolves.toBeNull();
+  const team = await t.run((ctx) => ctx.db.query("teams").first());
+  expect(team?.searchableRoles).toBe(team?.rolesWanted.join(" "));
 });
 
 it("can reset a local deployment", async () => {
@@ -41,6 +51,8 @@ it("can reset a local deployment", async () => {
         "teams",
         "teamMembers",
         "teamJoinRequests",
+        "teamConversations",
+        "teamMessages",
       ],
     });
   } finally {

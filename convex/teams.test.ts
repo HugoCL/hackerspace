@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import rateLimiter from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { expect, it } from "vitest";
 import { api, internal } from "./_generated/api";
@@ -14,6 +15,7 @@ const details = {
 
 async function setup() {
   const t = convexTest(schema, modules);
+  rateLimiter.register(t);
   await t.mutation(internal.seed.ensure, {});
   const event = await t.query(api.hackathons.bySlug, {
     slug: "santiago-hacks",
@@ -51,6 +53,16 @@ it("lists teams publicly, filters recruiting teams, and only lets the owner edit
   expect((await t.query(api.teams.list, listArgs)).page).toEqual([
     { _id: teamId, ...details },
   ]);
+  expect(await t.query(api.teams.summary, { hackathonId })).toEqual({
+    total: 1,
+    recruiting: 1,
+  });
+  expect(
+    (await t.query(api.teams.list, { ...listArgs, role: "Frontend" })).page,
+  ).toMatchObject([{ _id: teamId }]);
+  expect(
+    (await t.query(api.teams.list, { ...listArgs, role: "Backend" })).page,
+  ).toEqual([]);
   await expect(
     outsider.mutation(api.teams.update, { teamId, ...details }),
   ).rejects.toThrow("Solo el titular");
@@ -60,12 +72,16 @@ it("lists teams publicly, filters recruiting teams, and only lets the owner edit
     recruitingStatus: "closed",
   });
   expect((await t.query(api.teams.list, listArgs)).page).toEqual([]);
+  expect(await t.query(api.teams.summary, { hackathonId })).toEqual({
+    total: 1,
+    recruiting: 0,
+  });
   expect(
     (await t.query(api.teams.list, { ...listArgs, recruitingOnly: false }))
       .page,
   ).toMatchObject([{ _id: teamId }]);
   await expect(
-    outsider.mutation(api.teams.requestToJoin, { teamId }),
+    outsider.mutation(api.teams.startConversation, { teamId, body: "Hola" }),
   ).rejects.toThrow("ya no busca");
   const members = await t.run((ctx) => ctx.db.query("teamMembers").collect());
   const team = await t.run((ctx) => ctx.db.get("teams", teamId));
@@ -74,43 +90,105 @@ it("lists teams publicly, filters recruiting teams, and only lets the owner edit
   ]);
 });
 
-it("keeps requests private and accepts membership exactly once", async () => {
+it("keeps messages private and lets only the owner add a member exactly once", async () => {
   const { t, owner, applicant, outsider, hackathonId } = await setup();
   const teamId = await owner.mutation(api.teams.create, {
     hackathonId,
     ...details,
   });
-  const requestId = await applicant.mutation(api.teams.requestToJoin, {
+  const paginationOpts = { numItems: 10, cursor: null };
+  await expect(
+    t.mutation(api.teams.startConversation, { teamId, body: "Hola" }),
+  ).rejects.toThrow("Inicia sesión");
+  const conversationId = await applicant.mutation(api.teams.startConversation, {
     teamId,
+    body: " Hola, ¿les falta frontend? ",
   });
-  expect(await applicant.mutation(api.teams.requestToJoin, { teamId })).toBe(
-    requestId,
-  );
+  expect(
+    await applicant.mutation(api.teams.startConversation, {
+      teamId,
+      body: "Puedo ayudar.",
+    }),
+  ).toBe(conversationId);
   expect(await t.query(api.teams.viewerState, { teamId })).toBeNull();
   expect(await outsider.query(api.teams.viewerState, { teamId })).toEqual({
     kind: "visitor",
-    requestStatus: null,
+    conversationId: null,
   });
   expect(await applicant.query(api.teams.viewerState, { teamId })).toEqual({
     kind: "visitor",
-    requestStatus: "pending",
+    conversationId,
   });
   expect(await owner.query(api.teams.viewerState, { teamId })).toEqual({
     kind: "owner",
-    requests: [{ _id: requestId, displayName: "Bea" }],
+    conversationId: null,
   });
-  const resolution = { teamId, requestId, decision: "accepted" as const };
+  const inbox = { teamId, paginationOpts };
+  const history = { conversationId, paginationOpts };
+  expect((await owner.query(api.teams.conversations, inbox)).page).toEqual([
+    { _id: conversationId, displayName: "Bea" },
+  ]);
+  expect((await outsider.query(api.teams.conversations, inbox)).page).toEqual(
+    [],
+  );
+  expect((await applicant.query(api.teams.conversations, inbox)).page).toEqual(
+    [],
+  );
+  expect(
+    await outsider.query(api.teams.conversation, { conversationId }),
+  ).toBeNull();
+  expect((await t.query(api.teams.messages, history)).page).toEqual([]);
+  expect((await outsider.query(api.teams.messages, history)).page).toEqual([]);
   await expect(
-    outsider.mutation(api.teams.resolveRequest, resolution),
+    outsider.mutation(api.teams.sendMessage, {
+      conversationId,
+      body: "Intruso",
+    }),
+  ).rejects.toThrow("No tienes acceso");
+  expect((await owner.query(api.teams.messages, history)).page).toMatchObject([
+    { displayName: "Bea", body: "Puedo ayudar." },
+    { displayName: "Bea", body: "Hola, ¿les falta frontend?" },
+  ]);
+  await owner.mutation(api.teams.sendMessage, {
+    conversationId,
+    body: "¡Conversemos!",
+  });
+  expect(
+    (await applicant.query(api.teams.messages, history)).page[0],
+  ).toMatchObject({ displayName: "Andrea", body: "¡Conversemos!" });
+  const resolution = { teamId, conversationId };
+  await expect(
+    outsider.mutation(api.teams.addParticipant, resolution),
   ).rejects.toThrow("Solo el titular");
-  await owner.mutation(api.teams.resolveRequest, resolution);
-  await owner.mutation(api.teams.resolveRequest, resolution);
+  expect(
+    await owner.query(api.teams.conversation, { conversationId }),
+  ).toMatchObject({ canAdd: true });
+  await owner.mutation(api.teams.addParticipant, resolution);
+  await owner.mutation(api.teams.addParticipant, resolution);
+  expect(
+    await owner.query(api.teams.conversation, { conversationId }),
+  ).toMatchObject({ canAdd: false });
   expect(await applicant.query(api.teams.viewerState, { teamId })).toEqual({
     kind: "member",
+    conversationId,
   });
+  const other = await outsider.mutation(api.teams.startConversation, {
+    teamId,
+    body: "Hola equipo",
+  });
+  expect(
+    await applicant.query(api.teams.conversation, { conversationId: other }),
+  ).toMatchObject({ canAdd: false });
   await expect(
-    applicant.mutation(api.teams.requestToJoin, { teamId }),
-  ).rejects.toThrow("Ya eres parte");
+    applicant.mutation(api.teams.addParticipant, {
+      teamId,
+      conversationId: other,
+    }),
+  ).rejects.toThrow("Solo el titular");
+  await applicant.mutation(api.teams.sendMessage, {
+    conversationId: other,
+    body: "Hola Carlos",
+  });
   const members = await t.run((ctx) =>
     ctx.db
       .query("teamMembers")
@@ -120,31 +198,42 @@ it("keeps requests private and accepts membership exactly once", async () => {
   expect(members).toHaveLength(2);
 });
 
-it("rejects a request without granting membership", async () => {
-  const { t, owner, applicant, hackathonId } = await setup();
+it("validates message length and limits messages per sender across teams", async () => {
+  const { owner, applicant, outsider, hackathonId } = await setup();
   const teamId = await owner.mutation(api.teams.create, {
     hackathonId,
     ...details,
   });
-  const requestId = await applicant.mutation(api.teams.requestToJoin, {
+  const otherTeamId = await owner.mutation(api.teams.create, {
+    hackathonId,
+    ...details,
+  });
+  for (const body of [" ", "x".repeat(1001)])
+    await expect(
+      applicant.mutation(api.teams.startConversation, { teamId, body }),
+    ).rejects.toThrow("hasta 1000 caracteres");
+  const conversationId = await applicant.mutation(api.teams.startConversation, {
     teamId,
+    body: "Hola",
   });
-  await owner.mutation(api.teams.resolveRequest, {
-    teamId,
-    requestId,
-    decision: "rejected",
-  });
-  expect(await applicant.query(api.teams.viewerState, { teamId })).toEqual({
-    kind: "visitor",
-    requestStatus: "rejected",
-  });
-  const members = await t.run((ctx) =>
-    ctx.db
-      .query("teamMembers")
-      .withIndex("by_teamId_and_userId", (q) => q.eq("teamId", teamId))
-      .collect(),
-  );
-  expect(members).toHaveLength(1);
-  const retry = await applicant.mutation(api.teams.requestToJoin, { teamId });
-  expect(retry).not.toBe(requestId);
+  for (let index = 0; index < 7; index++)
+    await applicant.mutation(api.teams.sendMessage, {
+      conversationId,
+      body: "Seguimiento",
+    });
+  await expect(
+    applicant.mutation(api.teams.startConversation, {
+      teamId: otherTeamId,
+      body: "Hola",
+    }),
+  ).rejects.toThrow("Espera un momento");
+  expect(
+    await applicant.query(api.teams.viewerState, { teamId: otherTeamId }),
+  ).toMatchObject({ conversationId: null });
+  await expect(
+    outsider.mutation(api.teams.startConversation, {
+      teamId: otherTeamId,
+      body: "Hola",
+    }),
+  ).resolves.toBeTruthy();
 });

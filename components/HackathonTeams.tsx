@@ -3,6 +3,13 @@
 import { SignInButton } from "@clerk/nextjs";
 import { Button } from "@ui-sdk/react/button";
 import { Checkbox, CheckboxIndicator } from "@ui-sdk/react/checkbox";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@ui-sdk/react/dialog";
 import { Input } from "@ui-sdk/react/input";
 import { Textarea } from "@ui-sdk/react/textarea";
 import {
@@ -147,21 +154,207 @@ function TeamForm({
   );
 }
 
+function TeamConversation({
+  team,
+  initialId,
+}: {
+  team: Team;
+  initialId: Id<"teamConversations"> | null;
+}) {
+  const [startedId, setStartedId] = useState<Id<"teamConversations"> | null>(
+    null,
+  );
+  const conversationId = initialId ?? startedId;
+  const args = conversationId ? { conversationId } : "skip";
+  const conversation = useQuery(api.teams.conversation, args);
+  const messages = usePaginatedQuery(api.teams.messages, args, {
+    initialNumItems: 20,
+  });
+  const start = useMutation(api.teams.startConversation);
+  const send = useMutation(api.teams.sendMessage);
+  const add = useMutation(api.teams.addParticipant);
+  const [body, setBody] = useState("");
+  const messageId = useId();
+  const { error, pending, run } = useTeamAction();
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (pending || !body.trim()) return;
+    void run(async () => {
+      if (conversationId) await send({ conversationId, body });
+      else setStartedId(await start({ teamId: team._id, body }));
+      setBody("");
+    });
+  }
+
+  return (
+    <div className="grid gap-2">
+      <DialogTitle>
+        Conversación con {conversation?.displayName ?? team.name}
+      </DialogTitle>
+      {conversationId && !conversation ? (
+        <p role="status">
+          {conversation === null
+            ? "No tienes acceso a esta conversación."
+            : "Cargando conversación…"}
+        </p>
+      ) : (
+        <>
+          {messages.status === "CanLoadMore" && (
+            <Button
+              className="hs-btn hs-btn--secondary"
+              onClick={() => messages.loadMore(20)}
+            >
+              Ver mensajes anteriores
+            </Button>
+          )}
+          {messages.results.length > 0 && (
+            <ol
+              aria-label="Mensajes"
+              className="grid max-h-64 gap-2 overflow-y-auto"
+            >
+              {messages.results
+                .toReversed()
+                .map(({ _id, displayName, body }) => (
+                  <li
+                    className="rounded border border-border p-2 text-sm"
+                    key={_id}
+                  >
+                    <strong>{displayName}</strong>
+                    <p className="whitespace-pre-wrap wrap-anywhere">{body}</p>
+                  </li>
+                ))}
+            </ol>
+          )}
+          <form className="grid gap-2" onSubmit={submit}>
+            <label className="grid gap-1 text-sm" htmlFor={messageId}>
+              Mensaje
+              <Textarea
+                id={messageId}
+                className="hs-input h-auto"
+                disabled={pending}
+                maxLength={1000}
+                onChange={(event) => setBody(event.currentTarget.value)}
+                required
+                rows={3}
+                value={body}
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                className="hs-btn hs-btn--primary"
+                disabled={pending || !body.trim()}
+                type="submit"
+              >
+                Enviar
+              </Button>
+              {conversation?.canAdd && conversationId && (
+                <Button
+                  className="hs-btn hs-btn--secondary"
+                  disabled={pending}
+                  type="button"
+                  onClick={() =>
+                    run(() => add({ teamId: team._id, conversationId }))
+                  }
+                >
+                  Sumar al equipo
+                </Button>
+              )}
+            </div>
+          </form>
+        </>
+      )}
+      {error && <p role="alert">{error}</p>}
+    </div>
+  );
+}
+
+function TeamInbox({ team }: { team: Team }) {
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.teams.conversations,
+    { teamId: team._id },
+    { initialNumItems: 10 },
+  );
+  const [selected, setSelected] = useState<Id<"teamConversations"> | null>(
+    null,
+  );
+  if (selected)
+    return (
+      <>
+        <Button
+          className="hs-btn hs-btn--secondary justify-self-start"
+          onClick={() => setSelected(null)}
+        >
+          Volver a conversaciones
+        </Button>
+        <TeamConversation initialId={selected} team={team} />
+      </>
+    );
+  return (
+    <>
+      <DialogTitle>Conversaciones de {team.name}</DialogTitle>
+      {status === "LoadingFirstPage" ? (
+        <p role="status">Cargando conversaciones…</p>
+      ) : results.length === 0 ? (
+        <p>No hay conversaciones todavía.</p>
+      ) : (
+        <ul className="grid gap-2">
+          {results.map(({ _id, displayName }) => (
+            <li key={_id}>
+              <Button
+                className="hs-btn hs-btn--secondary"
+                onClick={() => setSelected(_id)}
+              >
+                {displayName}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {(status === "CanLoadMore" || status === "LoadingMore") && (
+        <Button
+          className="hs-btn hs-btn--secondary"
+          disabled={status === "LoadingMore"}
+          onClick={() => loadMore(10)}
+        >
+          Cargar más conversaciones
+        </Button>
+      )}
+    </>
+  );
+}
+
+function ConversationDialog({
+  children,
+  label,
+}: {
+  children: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <Dialog>
+      <DialogTrigger className="hs-btn hs-btn--secondary justify-self-start">
+        {label}
+      </DialogTrigger>
+      <DialogContent className="hs-card fixed top-1/2 left-1/2 z-50 max-h-[90dvh] w-[min(92vw,32rem)] -translate-1/2 overflow-y-auto shadow-xl">
+        {children}
+        <DialogClose className="hs-btn hs-btn--secondary justify-self-start">
+          Cerrar
+        </DialogClose>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function TeamActions({ team }: { team: Team }) {
   const state = useQuery(api.teams.viewerState, { teamId: team._id });
   const update = useMutation(api.teams.update);
-  const requestToJoin = useMutation(api.teams.requestToJoin);
-  const resolveRequest = useMutation(api.teams.resolveRequest);
   const [editing, setEditing] = useState(false);
-  const { error, pending, run } = useTeamAction();
-
   if (!state) return null;
-  if (state.kind === "member")
-    return <p role="status">Ya eres parte del equipo</p>;
-  if (state.kind === "owner")
-    return (
-      <div className="grid gap-2">
-        {editing ? (
+  return (
+    <div className="grid gap-2">
+      {state.kind === "owner" &&
+        (editing ? (
           <TeamForm
             team={team}
             onSave={(details) => update({ teamId: team._id, ...details })}
@@ -174,77 +367,20 @@ function TeamActions({ team }: { team: Team }) {
           >
             Editar equipo
           </Button>
-        )}
-        <h4 className="font-semibold">Solicitudes pendientes</h4>
-        {state.requests.length === 0 ? (
-          <p>No hay solicitudes pendientes.</p>
-        ) : (
-          <ul className="grid gap-2">
-            {state.requests.map(({ _id, displayName }) => (
-              <li className="grid gap-1" key={_id}>
-                <span>{displayName}</span>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    aria-label={`Aceptar solicitud de ${displayName}`}
-                    className="hs-btn hs-btn--primary"
-                    disabled={pending}
-                    onClick={() =>
-                      run(() =>
-                        resolveRequest({
-                          teamId: team._id,
-                          requestId: _id,
-                          decision: "accepted",
-                        }),
-                      )
-                    }
-                  >
-                    Aceptar
-                  </Button>
-                  <Button
-                    aria-label={`Rechazar solicitud de ${displayName}`}
-                    className="hs-btn hs-btn--secondary"
-                    disabled={pending}
-                    onClick={() =>
-                      run(() =>
-                        resolveRequest({
-                          teamId: team._id,
-                          requestId: _id,
-                          decision: "rejected",
-                        }),
-                      )
-                    }
-                  >
-                    Rechazar
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-        {error && <p role="alert">{error}</p>}
-      </div>
-    );
-  return (
-    <div className="grid gap-2">
-      {state.requestStatus === "pending" && (
-        <p role="status">Solicitud pendiente</p>
+        ))}
+      {state.kind === "member" && <p role="status">Ya eres parte del equipo</p>}
+      {state.kind !== "visitor" && (
+        <ConversationDialog label="Conversaciones">
+          <TeamInbox team={team} />
+        </ConversationDialog>
       )}
-      {state.requestStatus === "rejected" && (
-        <p role="status">Solicitud rechazada</p>
+      {(state.conversationId ||
+        (state.kind === "visitor" &&
+          team.recruitingStatus === "recruiting")) && (
+        <ConversationDialog label="Conversar">
+          <TeamConversation initialId={state.conversationId} team={team} />
+        </ConversationDialog>
       )}
-      {state.requestStatus !== "pending" &&
-        team.recruitingStatus === "recruiting" && (
-          <Button
-            className="hs-btn hs-btn--primary justify-self-start"
-            disabled={pending}
-            onClick={() => run(() => requestToJoin({ teamId: team._id }))}
-          >
-            {state.requestStatus === "rejected"
-              ? "Volver a solicitar ingreso"
-              : "Solicitar ingreso"}
-          </Button>
-        )}
-      {error && <p role="alert">{error}</p>}
     </div>
   );
 }
@@ -256,33 +392,46 @@ export default function HackathonTeams({
 }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const [recruitingOnly, setRecruitingOnly] = useState(false);
+  const [role, setRole] = useState("");
   const [creating, setCreating] = useState(false);
   const filterId = useId();
   const create = useMutation(api.teams.create);
   const { results, status, loadMore } = usePaginatedQuery(
     api.teams.list,
-    { hackathonId, recruitingOnly },
+    { hackathonId, recruitingOnly, role: role.trim() || undefined },
     { initialNumItems: 10 },
   );
 
   return (
-    <section aria-labelledby="event-teams" className="hs-card">
+    <section aria-labelledby="event-teams" className="hs-section">
       <h2 className="hs-section-title" id="event-teams">
         Equipos
       </h2>
-      <label
-        className="mb-3 flex items-center gap-2 text-sm"
-        htmlFor={filterId}
-      >
-        <Checkbox
-          checked={recruitingOnly}
-          id={filterId}
-          onCheckedChange={(value) => setRecruitingOnly(value === true)}
+      <div className="flex flex-wrap items-end gap-4">
+        <label className="grid gap-1 text-sm" htmlFor={`${filterId}-role`}>
+          Filtrar por rol
+          <Input
+            className="hs-input"
+            id={`${filterId}-role`}
+            maxLength={40}
+            value={role}
+            onChange={(event) => setRole(event.currentTarget.value)}
+          />
+        </label>
+        <label
+          className="mb-3 flex items-center gap-2 text-sm"
+          htmlFor={filterId}
         >
-          <CheckboxIndicator aria-hidden="true">✓</CheckboxIndicator>
-        </Checkbox>
-        Solo equipos que buscan integrantes
-      </label>
+          <Checkbox
+            checked={recruitingOnly}
+            id={filterId}
+            onCheckedChange={(value) => setRecruitingOnly(value === true)}
+          >
+            <CheckboxIndicator aria-hidden="true">✓</CheckboxIndicator>
+          </Checkbox>
+          Solo equipos que buscan integrantes
+        </label>
+      </div>
       {isAuthenticated ? (
         creating ? (
           <TeamForm
@@ -301,7 +450,7 @@ export default function HackathonTeams({
         !isLoading && (
           <SignInButton mode="modal">
             <Button className="hs-btn hs-btn--secondary">
-              Inicia sesión para participar
+              Inicia sesión para conversar
             </Button>
           </SignInButton>
         )
@@ -312,17 +461,19 @@ export default function HackathonTeams({
         </p>
       ) : results.length === 0 ? (
         <p className="mt-3" role="status">
-          {recruitingOnly
-            ? "No hay equipos buscando integrantes."
-            : "Aún no hay equipos en esta hackathon."}
+          {role.trim()
+            ? "No encontramos equipos para ese rol."
+            : recruitingOnly
+              ? "No hay equipos buscando integrantes."
+              : "Aún no hay equipos en esta hackathon."}
         </p>
       ) : (
-        <ul className="mt-3 grid gap-3" aria-label="Equipos de la hackathon">
+        <ul
+          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          aria-label="Equipos de la hackathon"
+        >
           {results.map((team) => (
-            <li
-              className="grid gap-2 border-border border-t pt-3"
-              key={team._id}
-            >
+            <li className="hs-card grid content-start gap-2" key={team._id}>
               <h3 className="hs-tcard-title">{team.name}</h3>
               <p className="text-sm">{team.description}</p>
               <span className="hs-badge hs-badge--neutral justify-self-start">

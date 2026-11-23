@@ -171,40 +171,48 @@ export default function HackathonPresence({
         announce
         count={attendance?.count}
         visitors={attendance?.visitors}
-      />
-      {viewers.length > 0 && (
-        <Popover>
-          <PopoverTrigger
-            aria-label="Ver quién está mirando"
-            className="inline-flex items-center gap-0.5 rounded-full"
-          >
-            {viewers.map(({ name, image }, index) => (
-              <ViewerAvatar
-                // biome-ignore lint/suspicious/noArrayIndexKey: Profile names and pictures are not unique.
-                key={`${index}:${name}:${image ?? ""}`}
-                name={name}
-                image={image}
-              />
-            ))}
-          </PopoverTrigger>
-          <PopoverContent className="hs-card z-10">
-            <PopoverTitle>Personas mirando</PopoverTitle>
-            <ul className="mt-2 grid gap-1 text-sm">
-              {viewers.map(({ name, image }, index) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: Profile names and pictures are not unique.
-                <li key={`${index}:${name}:${image ?? ""}`}>{name}</li>
-              ))}
-              {hiddenViewers > 0 && (
-                <li className="text-muted-foreground">
-                  {count > 1000
-                    ? "y muchas personas más"
-                    : `y ${hiddenViewers} más`}
-                </li>
+      >
+        {viewers.length > 0 && (
+          <Popover>
+            <PopoverTrigger
+              aria-label="Ver quién está mirando"
+              className="hs-avstack rounded-full"
+            >
+              <span className="hs-avstack-faces">
+                {viewers.slice(0, 3).map(({ name, image }, index) => (
+                  <ViewerAvatar
+                    // biome-ignore lint/suspicious/noArrayIndexKey: Profile names and pictures are not unique.
+                    key={`${index}:${name}:${image ?? ""}`}
+                    name={name}
+                    image={image}
+                  />
+                ))}
+              </span>
+              {count > 3 && (
+                <span aria-hidden="true" className="hs-avstack-more">
+                  {count > 1000 ? "+…" : `+${count - 3}`}
+                </span>
               )}
-            </ul>
-          </PopoverContent>
-        </Popover>
-      )}
+            </PopoverTrigger>
+            <PopoverContent className="hs-card z-10">
+              <PopoverTitle>Personas mirando</PopoverTitle>
+              <ul className="mt-2 grid gap-1 text-sm">
+                {viewers.map(({ name, image }, index) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Profile names and pictures are not unique.
+                  <li key={`${index}:${name}:${image ?? ""}`}>{name}</li>
+                ))}
+                {hiddenViewers > 0 && (
+                  <li className="text-muted-foreground">
+                    {count > 1000
+                      ? "y muchas personas más"
+                      : `y ${hiddenViewers} más`}
+                  </li>
+                )}
+              </ul>
+            </PopoverContent>
+          </Popover>
+        )}
+      </PresenceIndicator>
     </section>
   );
 }

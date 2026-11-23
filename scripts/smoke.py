@@ -115,33 +115,61 @@ def check():
                 expect(page.get_by_role("heading", name="No encontramos hackathones")).to_be_visible()
                 page.get_by_role("button", name="Limpiar búsqueda").click()
                 event_card = page.get_by_role("link", name="Código sin Fronteras", exact=False)
-                expect(event_card.get_by_text("0 mirando", exact=True)).to_be_visible()
-                expect(event_card.locator("[data-filled]")).to_have_count(8)
+                compact_pill = event_card.locator(".hs-presence--sm")
+                expect(compact_pill).to_have_text("0 viendo")
+                compact_pill.screenshot(path=str(ARTIFACTS / "catalog-presence-pill.png"))
+                page.screenshot(
+                    path=str(ARTIFACTS / "catalog-desktop.png"), full_page=True,
+                    style="#clerk-components, nextjs-portal { visibility: hidden; }",
+                )
                 event_card.click()
                 expect(
                     page.get_by_role("heading", name="Código sin Fronteras", level=1)
                 ).to_be_visible()
                 sidebar = page.get_by_role("complementary")
-                expect(sidebar.get_by_role("region", name="Datos del evento")).to_contain_text(
+                expect(page.get_by_role("region", name="Datos del evento")).to_contain_text(
                     "En línea"
                 )
                 presence = page.get_by_role("region", name="Presencia en vivo")
-                count = presence.locator("[aria-live=polite]")
-                cells = presence.locator("[data-filled=true]")
-                expect(count).to_have_text("0 mirando")
-                expect(presence.get_by_text("+1 visitante", exact=True)).to_be_visible()
-                expect(cells).to_have_count(0)
+                live_status = presence.locator("[aria-live=polite]")
+                pill = live_status.locator(".hs-presence")
+                count = pill.locator(".hs-presence-count")
+                expect(pill.get_by_text("En vivo", exact=True)).to_be_visible()
+                expect(count).to_have_text("0 viendo")
+                expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible()
+                assert pill.locator(".hs-presence-dot").evaluate(
+                    "(dot) => getComputedStyle(dot, '::after').content"
+                ) == "none"
                 expect(presence.get_by_role("button", name="Ver quién está mirando")).to_have_count(0)
-                teams = sidebar.get_by_role("region", name="Equipos", exact=True)
+                summary = sidebar.get_by_role("region", name="Resumen de equipos")
+                expect(summary).to_contain_text("2 equipos buscan gente")
+                summary.get_by_role("link", name="Ver equipos").click()
+                expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras?tab=equipos")
+                expect(sidebar).not_to_be_visible()
+                expect(page.get_by_role("tab", name="Equipos (2)")).to_have_attribute("aria-selected", "true")
+                teams = page.get_by_role("region", name="Equipos", exact=True)
                 expect(teams.get_by_role("listitem")).to_have_count(2)
-                expect(teams.get_by_role("button", name="Inicia sesión para participar")).to_be_visible()
+                expect(teams.get_by_role("button", name="Inicia sesión para conversar")).to_be_visible()
                 recruiting_filter = teams.get_by_role("checkbox", name="Solo equipos que buscan integrantes")
                 recruiting_filter.click()
                 expect(recruiting_filter).to_be_checked()
                 expect(teams.get_by_role("listitem")).to_have_count(2)
+                role_filter = teams.get_by_role("textbox", name="Filtrar por rol")
+                role_filter.fill("Frontend")
+                expect(teams.get_by_role("listitem")).to_have_count(1)
+                expect(teams.get_by_role("heading", name="Punto de Encuentro")).to_be_visible()
+                role_filter.clear()
+                expect(teams.get_by_role("listitem")).to_have_count(2)
                 teams.screenshot(path=str(ARTIFACTS / "teams-recruiting.png"))
+                clean_capture = "#clerk-components, nextjs-portal { visibility: hidden; }"
+                page.screenshot(path=str(ARTIFACTS / "teams-desktop.png"), full_page=True, style=clean_capture)
+                page.set_viewport_size({"width": 390, "height": 844})
+                page.screenshot(path=str(ARTIFACTS / "teams-mobile.png"), full_page=True, style=clean_capture)
+                page.set_viewport_size({"width": 1280, "height": 720})
+                page.get_by_role("tab", name="Resumen").click()
                 page.get_by_role("link", name="Ver bases", exact=True).click()
-                expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras#bases")
+                expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras?tab=bases")
+                expect(page.get_by_role("tabpanel", name="Bases y reglas")).to_be_visible()
                 navigations = []
                 page.on(
                     "framenavigated",
@@ -161,12 +189,10 @@ def check():
                     other_page = other_context.new_page()
                     other_page.on("pageerror", lambda err: page_errors.append(str(err)))
                     other_page.goto(page.url, wait_until="domcontentloaded")
-                    expect(presence.get_by_text("+2 visitantes", exact=True)).to_be_visible()
-                    expect(count).to_have_text("0 mirando")
-                    expect(cells).to_have_count(0)
+                    expect(live_status.get_by_text("+2 visitantes", exact=True)).to_be_visible()
+                    expect(count).to_have_text("0 viendo")
                     expect(catalog_card.get_by_text("+2 visitantes", exact=True)).to_be_visible()
-                    expect(catalog_card.get_by_text("0 mirando", exact=True)).to_be_visible()
-                    expect(catalog_card.locator("[data-filled=true]")).to_have_count(0)
+                    expect(catalog_card.locator(".hs-presence--sm")).to_have_text("0 viendo")
                     clean_capture = "#clerk-components, nextjs-portal { visibility: hidden; }"
                     catalog_card.screenshot(
                         path=str(ARTIFACTS / "catalog-live-viewers.png"),
@@ -177,9 +203,11 @@ def check():
                     )
                     presence.screenshot(path=str(ARTIFACTS / "presence-two-viewers.png"))
                     other_presence = other_page.get_by_role("region", name="Presencia en vivo")
-                    expect(other_presence.get_by_text("+2 visitantes", exact=True)).to_be_visible()
-                    expect(other_presence.locator("[data-filled=false]").first).to_have_css(
-                        "transition-property", "none"
+                    expect(other_presence.locator("[aria-live=polite]").get_by_text(
+                        "+2 visitantes", exact=True
+                    )).to_be_visible()
+                    expect(other_presence.locator(".hs-presence-count")).to_have_css(
+                        "animation-name", "none"
                     )
                     other_presence.screenshot(path=str(ARTIFACTS / "presence-mobile.png"))
                     page.screenshot(
@@ -189,10 +217,10 @@ def check():
                         path=str(ARTIFACTS / "profile-mobile.png"), full_page=True, style=clean_capture
                     )
                     other_page.goto("about:blank", wait_until="domcontentloaded")
-                    expect(presence.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=5_000)
+                    expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=5_000)
                 finally:
                     other_context.close()
-                expect(cells).to_have_count(0)
+                expect(count).to_have_text("0 viendo")
                 expect(catalog_card.get_by_text("+1 visitante", exact=True)).to_be_visible()
                 extra_contexts = []
                 try:
@@ -200,15 +228,14 @@ def check():
                         extra_context = browser.new_context()
                         extra_contexts.append(extra_context)
                         extra_context.new_page().goto(page.url, wait_until="domcontentloaded")
-                    expect(presence.get_by_text("+9 visitantes", exact=True)).to_be_visible(timeout=20_000)
-                    expect(count).to_have_text("0 mirando")
-                    expect(cells).to_have_count(0)
+                    expect(live_status.get_by_text("+9 visitantes", exact=True)).to_be_visible(timeout=20_000)
+                    expect(count).to_have_text("0 viendo")
                     expect(catalog_card.get_by_text("+9 visitantes", exact=True)).to_be_visible()
-                    expect(catalog_card.get_by_text("0 mirando", exact=True)).to_be_visible()
+                    expect(catalog_card.locator(".hs-presence--sm")).to_have_text("0 viendo")
                 finally:
                     for extra_context in extra_contexts:
                         extra_context.close()
-                expect(presence.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=20_000)
+                expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=20_000)
                 assert not navigations, f"Presence updated after navigation: {navigations}"
                 presence.screenshot(path=str(ARTIFACTS / "presence-after-close.png"))
             finally:
@@ -224,7 +251,7 @@ def check():
         return 1
     print(
         f"PASS: {URL} connected to Convex, filtered events and opened a hackathon profile; "
-        "profile and catalog visitors changed 1 → 2 → 1 without filling the account grid; "
+        "profile and catalog visitors changed 1 → 2 → 1 without changing the account pill; "
         "screenshot at artifacts/smoke.png"
     )
     return 0

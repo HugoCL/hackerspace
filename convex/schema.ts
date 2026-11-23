@@ -45,13 +45,18 @@ export default defineSchema({
     hackathonId: v.id("hackathons"),
     ownerId: v.id("users"),
     ...teamDetails.fields,
+    searchableRoles: v.optional(v.string()),
   })
     .index("by_hackathonId_and_recruitingStatus", [
       "hackathonId",
       "recruitingStatus",
     ])
     .index("by_hackathonId", ["hackathonId"])
-    .index("by_ownerId", ["ownerId"]),
+    .index("by_ownerId", ["ownerId"])
+    .searchIndex("search_searchableRoles", {
+      searchField: "searchableRoles",
+      filterFields: ["hackathonId", "recruitingStatus"],
+    }),
   teamMembers: defineTable({
     teamId: v.id("teams"),
     userId: v.id("users"),
@@ -59,6 +64,7 @@ export default defineSchema({
   })
     .index("by_teamId_and_userId", ["teamId", "userId"])
     .index("by_userId", ["userId"]),
+  // Retained for existing data; conversations do not expose legacy requests.
   teamJoinRequests: defineTable({
     teamId: v.id("teams"),
     requesterId: v.id("users"),
@@ -69,4 +75,16 @@ export default defineSchema({
     .index("by_teamId_and_status", ["teamId", "status"])
     .index("by_teamId_and_requesterId", ["teamId", "requesterId"])
     .index("by_requesterId", ["requesterId"]),
+  teamConversations: defineTable({
+    teamId: v.id("teams"),
+    participantId: v.id("users"),
+    updatedAt: v.number(),
+  })
+    .index("by_teamId_and_participantId", ["teamId", "participantId"])
+    .index("by_teamId_and_updatedAt", ["teamId", "updatedAt"]),
+  teamMessages: defineTable({
+    conversationId: v.id("teamConversations"),
+    senderId: v.id("users"),
+    body: v.string(),
+  }).index("by_conversationId", ["conversationId"]),
 });

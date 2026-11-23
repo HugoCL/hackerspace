@@ -46,6 +46,7 @@ export default defineSchema({
     ownerId: v.id("users"),
     ...teamDetails.omit("lookingFor").fields,
     lookingFor: v.optional(v.string()),
+    memberCount: v.optional(v.number()),
     searchableText: v.optional(v.string()),
     rolesWanted: v.optional(v.array(v.string())),
     searchableRoles: v.optional(v.string()),

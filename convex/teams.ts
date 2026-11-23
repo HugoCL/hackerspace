@@ -111,7 +111,10 @@ export const list = query({
     paginationOpts: paginationOptsValidator,
   },
   returns: paginationResultValidator(
-    teamDetails.extend({ _id: v.id("teams"), memberCount: v.number() }),
+    teamDetails.extend({
+      _id: v.id("teams"),
+      memberCount: v.union(v.number(), v.null()),
+    }),
   ),
   handler: async (
     ctx,
@@ -141,29 +144,23 @@ export const list = query({
     ).paginate(paginationOpts);
     return {
       ...page,
-      page: await Promise.all(
-        page.page.map(
-          async ({
-            _id,
-            name,
-            description,
-            lookingFor,
-            rolesWanted,
-            recruitingStatus,
-          }) => ({
-            _id,
-            name,
-            description,
-            recruitingStatus,
-            lookingFor: lookingFor ?? legacyLookingFor(rolesWanted).text,
-            memberCount: (
-              await ctx.db
-                .query("teamMembers")
-                .withIndex("by_teamId_and_userId", (q) => q.eq("teamId", _id))
-                .take(1001)
-            ).length,
-          }),
-        ),
+      page: page.page.map(
+        ({
+          _id,
+          name,
+          description,
+          lookingFor,
+          rolesWanted,
+          recruitingStatus,
+          memberCount,
+        }) => ({
+          _id,
+          name,
+          description,
+          recruitingStatus,
+          lookingFor: lookingFor ?? legacyLookingFor(rolesWanted).text,
+          memberCount: memberCount ?? null,
+        }),
       ),
     };
   },
@@ -238,6 +235,7 @@ export const create = mutation({
       ...normalizeDetails(details),
       hackathonId,
       ownerId,
+      memberCount: 1,
     });
     await ctx.db.insert("teamMembers", {
       teamId,
@@ -471,7 +469,7 @@ export const messages = query({
 export const addParticipant = mutation({
   args: { teamId: v.id("teams"), conversationId: v.id("teamConversations") },
   handler: async (ctx, { teamId, conversationId }) => {
-    await requireOwnedTeam(ctx, teamId);
+    const team = await requireOwnedTeam(ctx, teamId);
     const conversation = await ctx.db.get("teamConversations", conversationId);
     if (!conversation || conversation.teamId !== teamId)
       throw new ConvexError("No encontramos esa conversación.");
@@ -481,6 +479,11 @@ export const addParticipant = mutation({
         userId: conversation.participantId,
         joinedAt: Date.now(),
       });
+      if (team.memberCount !== undefined) {
+        await ctx.db.patch("teams", teamId, {
+          memberCount: team.memberCount + 1,
+        });
+      }
     }
   },
 });

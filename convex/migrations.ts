@@ -39,12 +39,28 @@ export const migrateTeamLookingFor = migrations.define({
   },
 });
 
+export const backfillTeamMemberCount = migrations.define({
+  table: "teams",
+  batchSize: 1,
+  migrateOne: async (ctx, team) => {
+    if (team.memberCount !== undefined) return;
+    let memberCount = 0;
+    for await (const _member of ctx.db
+      .query("teamMembers")
+      .withIndex("by_teamId_and_userId", (q) => q.eq("teamId", team._id))) {
+      memberCount++;
+    }
+    return { memberCount };
+  },
+});
+
 // `pnpm migrate`: runs the listed migrations in order. Add new ones to this list.
 export const runAll = internalMutation({
   args: {},
   handler: async (ctx) => {
     await migrations.runSerially(ctx, [
       internal.migrations.migrateTeamLookingFor,
+      internal.migrations.backfillTeamMemberCount,
     ]);
     return null;
   },

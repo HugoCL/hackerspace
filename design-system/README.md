@@ -9,8 +9,8 @@ Hackerspace se tiene que sentir como entrar a una sala llena: ves quién más es
 ## Principios
 
 1. **Lo vivo es naranja, y solo lo vivo.** `hs-live` marca presencia y actividad en tiempo real (punto de presencia, "23 viendo", alguien se unió a un equipo). Si no está pasando ahora, no es naranja.
-2. **Lo redondo es una persona.** `radius-full` solo para avatares, puntos de presencia y la píldora EN VIVO. Todo lo demás usa `radius-sm` (controles) o `radius-md` (tarjetas).
-3. **Humano vs. agente, siempre visible.** Todo lo que crea o hace un agente IA (el scout de hackathones con Firecrawl, el agente de un usuario vía API) lleva la etiqueta mono `hs-agent` con borde punteado: "AGENTE · scout". Nunca se disfraza de persona.
+2. **Lo redondo es una persona.** `radius-full` solo para avatares, puntos de presencia y la píldora de presencia. Todo lo demás usa `radius-sm` (controles) o `radius-md` (tarjetas).
+3. **Humano vs. agente, siempre visible.** Todo lo que crea o hace un agente IA (el scout de hackathones con Firecrawl, el agente de un usuario vía API) lleva la etiqueta `hs-agent` en monoespaciada con borde punteado: "agente scout". Nunca se disfraza de persona.
 4. **Bordes, no sombras.** Las tarjetas (`hs-surface`) se separan del fondo con `ui-border`. Sin gradientes.
 5. **Una acción primaria por vista** en `ui-primary` (bloque de tinta). La lima `hs-signal` se reserva para el único llamado que más importa (p. ej. "Abierto a equipo").
 
@@ -18,9 +18,11 @@ Hackerspace se tiene que sentir como entrar a una sala llena: ves quién más es
 
 - Español neutro, tuteo, frases cortas. "Únete al equipo", no "Solicitar incorporación".
 - Fechas y lugares primero: **Valparaíso · 14–16 mar**. La modalidad como chip: *Presencial* (tinta) o *Virtual* (`hs-virtual`).
-- Cifras vivas en mono tabular (`.live`): `● EN VIVO · 23 VIENDO`, `3 LUGARES LIBRES`, `02:14:09`.
+- Mayúscula solo al inicio de la frase, también en etiquetas y botones: "En vivo", "23 viendo", "2 lugares libres". Nada en MAYÚSCULAS sostenidas.
+- Cifras que cambian en vivo siempre con números tabulares (`.live`) para que no salten.
+- La monoespaciada significa "esto lo hizo o lo mide una máquina": solo en la etiqueta de agente y en el reloj del Countdown (`02:14:09`).
 - Estados vacíos que invitan: "Nadie está buscando equipo aún. Sé el primero."
-- Perfiles generados por el scout dicen de dónde salieron: "Creado por AGENTE · scout desde devpost.com · revisado por 2 personas".
+- Perfiles generados por el scout dicen de dónde salieron: "Creado por agente scout desde devpost.com, revisado por 2 personas".
 
 ## Fundamentos visuales
 
@@ -43,7 +45,7 @@ Contraste verificado en ambos temas: texto ≥4.5:1, bordes de control y punto e
 
 - **Space Grotesk** (display, 600): títulos y el nombre.
 - **Geist** (sans): texto y controles; `ui` = 13px como `--ui-font-size`.
-- **Geist Mono**: todo lo que cuenta o cambia en vivo, y las etiquetas de agente.
+- **Geist Mono**: solo lo que es de máquina: etiquetas de agente y el reloj del Countdown.
 
 Las tres vienen de Google Fonts; no hay archivos de fuente en el sistema.
 
@@ -55,7 +57,7 @@ Rejilla de 4px (`space-1` = `--ui-spacing`). Tarjetas con `space-4` de padding y
 
 - **Píldora de presencia:** fondo `hs-live-soft`, punto `hs-live` 8px `radius-full` con pulso suave (respeta `prefers-reduced-motion`), texto `.live` en `hs-live-ink`.
 - **Pila de avatares:** hasta 5 avatares solapados `space-2`, borde 2px `hs-surface`, y "+18" en `.caption`.
-- **Feed de actividad:** filas con hora mono, actor (persona o etiqueta de agente) y acción. Las nuevas entran arriba con un destello `hs-live-soft` que se desvanece.
+- **Feed de actividad:** filas con hora, actor (persona o etiqueta de agente) y acción. Las nuevas entran arriba con un destello `hs-live-soft` que se desvanece.
 - **Cupos de equipo:** ranuras vacías como círculos con borde punteado `ui-input`; ocupadas con avatar.
 
 ## Iconografía
@@ -110,6 +112,34 @@ AppShell (nav · acciones · banner en vivo opcional · aside opcional)
 
 - Móvil primero: Grid colapsa a una columna sola; la nav del AppShell hace scroll horizontal; las acciones del PageHeader bajan debajo del título.
 - Nada se oculta en móvil que sea en vivo: PresencePill y Countdown siempre visibles.
+
+## Cómo se siente
+
+Detalles pequeños que hacen que la interfaz responda. Ya están en `components/bundle.css`; al crear componentes nuevos, respétalos:
+
+- **Responde al toque.** Botones y tarjetas enlazadas se encogen apenas al presionar (`scale(.97)` y `.99`). Transiciones de 100–150ms sobre propiedades concretas, nunca `transition: all`.
+- **Área táctil de 40px.** Los controles miden 32px pero su zona clicable se extiende a 40px; en pantallas táctiles (`pointer: coarse`) crecen de verdad a 40px.
+- **Los números no saltan.** `tabular-nums` en todo conteo; cuando el número de presencia cambia, entra con un deslizamiento de 3px.
+- **Lo nuevo llega, no aparece.** Una fila nueva del feed baja 6px con fundido y un destello `hs-live-soft`. Es el único movimiento no iniciado por la persona, junto al pulso del punto en vivo.
+- **Texto cuidado.** Suavizado de fuente, títulos con `text-wrap: balance`, párrafos con `text-wrap: pretty`.
+- **Imágenes con borde.** Fotos de avatar y portadas llevan un contorno interior del 12% de la tinta para no fundirse con el fondo.
+- **Alineación óptica.** Un botón con ícono lleva 2px menos de relleno del lado del ícono.
+- **Radios concéntricos.** Lo que va dentro de una tarjeta (`radius-md`) usa `radius-sm`; nunca el mismo radio anidado.
+- Todo movimiento se apaga con `prefers-reduced-motion`.
+
+## Primitivas de UI SDK
+
+Los componentes de este sistema son la referencia visual. En la app, el comportamiento (teclado, foco, ARIA) viene de UI SDK y las clases `hs-*` solo lo visten. No armes widgets con `role=` a mano.
+
+| Componente | En la app |
+| --- | --- |
+| `Button` | `@ui-sdk/react/button` con `className="hs-btn hs-btn--…"` |
+| `Tabs` | `@ui-sdk/react/tabs` (`TabsList` → `hs-tabs`, `TabsTab` → `hs-tab`; el estado llega por `data-selected`) |
+| `Input` | `@ui-sdk/react/field` + `@ui-sdk/react/input` (`hs-field`, `hs-input-control`) |
+| `Select` | `@ui-sdk/react/select` |
+| `Avatar` | `@ui-sdk/react/avatar` con las clases `hs-avatar` |
+| Diálogos, menús, toasts, tooltips | `dialog`, `menu`, `toast`, `tooltip` de UI SDK; aún sin estilo `hs-*` |
+| `PresencePill`, `ActivityFeed`, `TeamSlots`, `AgentTag`, `Countdown`, tarjetas, layout | Sin primitiva: son marcado propio con clases `hs-*` |
 
 ## Contenido hecho por agentes
 

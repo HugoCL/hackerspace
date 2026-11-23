@@ -138,7 +138,34 @@ function MorphLetters({ text }: { text: string }) {
   });
 }
 
-export default function SiteFooter({ year }: { year: number }) {
+export default function SiteFooter({
+  variant,
+  year,
+}: {
+  variant: "animated" | "compact";
+  year: number;
+}) {
+  if (variant === "animated") return <AnimatedSiteFooter year={year} />;
+
+  return (
+    <footer className="hs-footer hs-footer--compact">
+      <div className="hs-footer-compact-inner">
+        <span className="hs-wordmark">
+          <span aria-hidden="true" className="hs-wordmark-mark" />
+          Hackerspace
+        </span>
+        <nav aria-label="Pie de página" className="hs-footer-compact-links">
+          <Link className="hs-footer-link" href="/">
+            Hackathones
+          </Link>
+        </nav>
+        <span className="hs-footer-note">© {year}</span>
+      </div>
+    </footer>
+  );
+}
+
+function AnimatedSiteFooter({ year }: { year: number }) {
   const [paused, setPaused] = useState(false);
   const reduced = useReducedMotion();
   const still = paused || reduced;

@@ -125,8 +125,15 @@ it("keeps messages private and lets only the owner add a member exactly once", a
   });
   const inbox = { teamId, paginationOpts };
   const history = { conversationId, paginationOpts };
-  expect((await owner.query(api.teams.conversations, inbox)).page).toEqual([
-    { _id: conversationId, displayName: "Bea" },
+  expect(
+    (await owner.query(api.teams.conversations, inbox)).page,
+  ).toMatchObject([
+    {
+      _id: conversationId,
+      displayName: "Bea",
+      lastMessage: "Puedo ayudar.",
+      lastMessageAt: expect.any(Number),
+    },
   ]);
   expect((await outsider.query(api.teams.conversations, inbox)).page).toEqual(
     [],
@@ -146,8 +153,8 @@ it("keeps messages private and lets only the owner add a member exactly once", a
     }),
   ).rejects.toThrow("No tienes acceso");
   expect((await owner.query(api.teams.messages, history)).page).toMatchObject([
-    { displayName: "Bea", body: "Puedo ayudar." },
-    { displayName: "Bea", body: "Hola, ¿les falta frontend?" },
+    { displayName: "Bea", body: "Puedo ayudar.", isMine: false },
+    { displayName: "Bea", body: "Hola, ¿les falta frontend?", isMine: false },
   ]);
   await owner.mutation(api.teams.sendMessage, {
     conversationId,
@@ -155,19 +162,30 @@ it("keeps messages private and lets only the owner add a member exactly once", a
   });
   expect(
     (await applicant.query(api.teams.messages, history)).page[0],
-  ).toMatchObject({ displayName: "Andrea", body: "¡Conversemos!" });
+  ).toMatchObject({
+    displayName: "Andrea",
+    body: "¡Conversemos!",
+    isMine: false,
+    _creationTime: expect.any(Number),
+  });
+  expect(
+    (await owner.query(api.teams.messages, history)).page[0],
+  ).toMatchObject({ isMine: true });
+  expect(
+    await applicant.query(api.teams.conversation, { conversationId }),
+  ).toMatchObject({ displayName: "Andrea", canAdd: false, isMember: false });
   const resolution = { teamId, conversationId };
   await expect(
     outsider.mutation(api.teams.addParticipant, resolution),
   ).rejects.toThrow("Solo el titular");
   expect(
     await owner.query(api.teams.conversation, { conversationId }),
-  ).toMatchObject({ canAdd: true });
+  ).toMatchObject({ displayName: "Bea", canAdd: true, isMember: false });
   await owner.mutation(api.teams.addParticipant, resolution);
   await owner.mutation(api.teams.addParticipant, resolution);
   expect(
     await owner.query(api.teams.conversation, { conversationId }),
-  ).toMatchObject({ canAdd: false });
+  ).toMatchObject({ canAdd: false, isMember: true });
   expect(await applicant.query(api.teams.viewerState, { teamId })).toEqual({
     kind: "member",
     conversationId,

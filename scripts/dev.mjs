@@ -33,6 +33,7 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { constants } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -157,6 +158,8 @@ let stopping = false;
 let stopSignal = "SIGINT";
 let forwarded = false;
 let watching = false;
+let issuerGroup = null;
+let issuerShutdown = null;
 
 const alive = () =>
   child !== null && child.exitCode === null && child.signalCode === null;
@@ -168,12 +171,38 @@ function forwardSigint() {
   child.kill("SIGINT");
 }
 
+function signalGroup(pid, signal) {
+  try {
+    process.kill(-pid, signal);
+    return true;
+  } catch (err) {
+    if (err.code === "ESRCH") return false;
+    throw err;
+  }
+}
+
+async function stopIssuerGroup(pid) {
+  signalGroup(pid, "SIGTERM");
+  const deadline = Date.now() + 2_000;
+  while (signalGroup(pid, 0)) {
+    if (Date.now() >= deadline) {
+      signalGroup(pid, "SIGKILL");
+      break;
+    }
+    await delay(25);
+  }
+}
+
 // One handler for every stop signal. A terminal delivers Ctrl-C to the whole foreground group,
 // so the child normally has that SIGINT already; if it is still alive 2 s later, send it.
 for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
   process.on(signal, () => {
     stopping = true;
     stopSignal = signal;
+    if (issuerGroup !== null) {
+      issuerShutdown ??= stopIssuerGroup(issuerGroup);
+      return;
+    }
     if (signal === "SIGINT" && process.stdin.isTTY) {
       if (!watching) setTimeout(forwardSigint, 2000);
       watching = true;
@@ -184,15 +213,18 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
 }
 
 // Runs `convex <args>` and resolves with { code, signal }.
-function convex(args, { capture = false } = {}) {
+function convex(args, { capture = false, isolateIssuer = false } = {}) {
   return new Promise((resolveRun) => {
     if (stopping) return resolveRun({ code: null, signal: stopSignal });
     let stdout = "";
+    const detached = isolateIssuer && process.platform !== "win32";
     child = spawn("convex", args, {
       cwd: root,
       env,
+      detached,
       stdio: capture ? ["inherit", "pipe", "inherit"] : "inherit",
     });
+    if (detached) issuerGroup = child.pid ?? null;
     child.stdout?.setEncoding("utf8").on("data", (chunk) => {
       stdout += chunk;
     });
@@ -200,7 +232,10 @@ function convex(args, { capture = false } = {}) {
       console.error(`dev: cannot start convex: ${err.message}`);
       resolveRun({ code: 1, signal: null, stdout });
     });
-    child.on("close", (code, signal) => resolveRun({ code, signal, stdout }));
+    child.on("close", (code, signal) => {
+      issuerGroup = null;
+      resolveRun({ code, signal, stdout });
+    });
   });
 }
 
@@ -229,13 +264,15 @@ if (!skipAuthPreflight) {
   if (mode.anonymous) {
     const init = await convex(["init"]);
     if (stopping || init.code !== 0) process.exit(exitCode(init));
-    const issuer = await convex([
-      "env",
-      "set",
-      CLERK_ISSUER_VAR,
-      LOCAL_CLERK_ISSUER,
-    ]);
-    if (stopping || issuer.code !== 0) process.exit(exitCode(issuer));
+    const issuer = await convex(
+      ["env", "set", CLERK_ISSUER_VAR, LOCAL_CLERK_ISSUER],
+      { isolateIssuer: true },
+    );
+    if (stopping) {
+      await issuerShutdown;
+      process.exit(exitCode({ code: null, signal: stopSignal }));
+    }
+    if (issuer.code !== 0) process.exit(exitCode(issuer));
   } else {
     const issuer = await convex(["env", "get", CLERK_ISSUER_VAR], {
       capture: true,

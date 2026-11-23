@@ -309,7 +309,11 @@ function TeamConversation({
   const addition = useTeamAction();
   const history = useRef<HTMLDivElement>(null);
   const newest = messages.results[0]?._id;
-  const olderHeight = useRef<number | null>(null);
+  const nearBottom = useRef(true);
+  const [hasNewMessages, setHasNewMessages] = useState(false);
+  const olderAnchor = useRef<{ node: HTMLElement; offsetTop: number } | null>(
+    null,
+  );
   const unavailable =
     conversation === null ||
     prospectContact === null ||
@@ -317,15 +321,18 @@ function TeamConversation({
 
   useLayoutEffect(() => {
     const pane = history.current;
-    if (pane && newest && !unavailable) pane.scrollTop = pane.scrollHeight;
+    if (!pane || !newest || unavailable) return;
+    if (nearBottom.current) pane.scrollTop = pane.scrollHeight;
+    else setHasNewMessages(true);
   }, [newest, unavailable]);
 
   const loadingOlder = messages.status === "LoadingMore";
   useLayoutEffect(() => {
     const pane = history.current;
-    if (pane && !loadingOlder && olderHeight.current !== null) {
-      pane.scrollTop += pane.scrollHeight - olderHeight.current;
-      olderHeight.current = null;
+    if (pane && !loadingOlder && olderAnchor.current) {
+      const { node, offsetTop } = olderAnchor.current;
+      pane.scrollTop += node.offsetTop - offsetTop;
+      olderAnchor.current = null;
     }
   }, [loadingOlder]);
 
@@ -372,8 +379,16 @@ function TeamConversation({
         </div>
       )}
       <div
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4"
+        aria-label="Historial de mensajes"
+        className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 [overflow-anchor:none]"
+        onScroll={(event) => {
+          const { clientHeight, scrollHeight, scrollTop } = event.currentTarget;
+          nearBottom.current = scrollHeight - clientHeight - scrollTop <= 24;
+          if (nearBottom.current) setHasNewMessages(false);
+        }}
         ref={history}
+        role="region"
+        tabIndex={0}
       >
         {unavailable ? (
           <p className="m-auto text-sm text-muted-foreground" role="status">
@@ -398,7 +413,10 @@ function TeamConversation({
                 className="hs-btn hs-btn--ghost mb-3 shrink-0 self-center"
                 disabled={loadingOlder}
                 onClick={() => {
-                  olderHeight.current = history.current?.scrollHeight ?? null;
+                  const node =
+                    history.current?.querySelector<HTMLElement>("ol > li");
+                  if (node)
+                    olderAnchor.current = { node, offsetTop: node.offsetTop };
                   messages.loadMore(20);
                 }}
               >
@@ -450,6 +468,21 @@ function TeamConversation({
           </>
         )}
       </div>
+      {hasNewMessages && (
+        <Button
+          className="hs-btn hs-btn--secondary hs-btn--sm mx-auto mb-2 shrink-0"
+          onClick={() => {
+            const pane = history.current;
+            if (!pane) return;
+            nearBottom.current = true;
+            pane.scrollTop = pane.scrollHeight;
+            pane.focus({ preventScroll: true });
+            setHasNewMessages(false);
+          }}
+        >
+          Nuevos mensajes ↓
+        </Button>
+      )}
       {!unavailable && (
         <form
           className="shrink-0 border-t border-border bg-[var(--hs-surface)] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"

@@ -197,10 +197,12 @@ def check():
                         extra_context.new_page().goto(page.url, wait_until="domcontentloaded")
                     expect(live_status.get_by_text("+9 visitantes", exact=True)).to_be_visible(timeout=20_000)
                     expect(count).to_have_text("0 viendo")
+                    for extra_context in extra_contexts:
+                        extra_context.pages[0].evaluate("setTimeout(() => location.href = 'about:blank', 0)")
+                    expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=5_000)
                 finally:
                     for extra_context in extra_contexts:
                         extra_context.close()
-                expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=20_000)
                 assert not navigations, f"Presence updated after navigation: {navigations}"
                 presence.screenshot(path=str(ARTIFACTS / "presence-after-close.png"))
             finally:

@@ -771,7 +771,6 @@ export default function HackathonTeams({
               </div>
               <Collapsible>
                 <CollapsibleTrigger
-                  aria-label={`Descripción de ${team.name}`}
                   className="group flex w-full cursor-pointer items-center justify-between gap-2 text-left text-muted-foreground"
                 >
                   <span className="hs-tcard-pitch line-clamp-1! group-data-open:hidden!">

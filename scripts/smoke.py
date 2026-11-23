@@ -135,12 +135,14 @@ def check():
                 )
                 presence = page.get_by_role("region", name="Presencia en vivo")
                 live_status = presence.locator("[aria-live=polite]")
-                pill = live_status.locator(".hs-presence")
+                pill = presence.locator(".hs-presence")
                 count = pill.locator(".hs-presence-count")
                 expect(pill.get_by_text("En vivo", exact=True)).to_be_visible()
                 expect(count).to_have_text("0 viendo")
                 expect(pill).to_have_text("En vivo·0 viendo")
-                expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible()
+                expect(live_status.get_by_text("0 viendo", exact=True)).to_have_count(1)
+                expect(live_status.get_by_text("+1 visitante", exact=True)).to_have_count(1)
+                expect(live_status.get_by_role("button")).to_have_count(0)
                 assert pill.locator(".hs-presence-dot").evaluate(
                     "(dot) => getComputedStyle(dot, '::after').content"
                 ) == "none"

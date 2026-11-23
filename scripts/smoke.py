@@ -40,6 +40,7 @@ STAMP = VENV / ".smoke-ready"
 ARTIFACTS = ROOT / "artifacts"
 PORT = int(os.environ.get("PORT", "3000"))
 URL = f"http://localhost:{PORT}"
+CATALOG_DATE = "2027-03-01T12:00:00Z"
 
 
 def port_open(port):
@@ -90,6 +91,7 @@ def check():
         browser = p.chromium.launch(headless=True)
         try:
             page = browser.new_page()
+            page.clock.set_fixed_time(CATALOG_DATE)
             page.on("pageerror", lambda err: page_errors.append(str(err)))
             try:
                 page.goto(URL, wait_until="domcontentloaded", timeout=120_000)
@@ -101,25 +103,50 @@ def check():
                     "Conexión activa", timeout=60_000
                 )
                 expect(page.get_by_role("heading", name="Santiago Hacks 2027")).to_be_visible()
+                search = page.get_by_role("searchbox", name="Buscar hackathones")
+                search.fill("santiago")
+                expect(page.get_by_role("heading", name="Santiago Hacks 2027")).to_be_visible()
+                expect(page.get_by_role("heading", name="Hack Puerto")).not_to_be_visible()
                 page.get_by_role("tab", name="Virtuales").click()
                 expect(page.get_by_role("heading", name="Santiago Hacks 2027")).not_to_be_visible()
-                search = page.get_by_role("searchbox", name="Buscar hackathones")
                 search.fill("codigo")
                 expect(page.get_by_role("heading", name="Código sin Fronteras")).to_be_visible()
                 search.fill("evento inexistente")
                 expect(page.get_by_role("heading", name="No encontramos hackathones")).to_be_visible()
                 page.get_by_role("button", name="Limpiar búsqueda").click()
-                page.get_by_role("link", name="Código sin Fronteras", exact=False).click()
+                event_card = page.get_by_role("link", name="Código sin Fronteras", exact=False)
+                compact_pill = event_card.locator(".hs-presence--sm")
+                expect(compact_pill).to_have_text("0 viendo")
+                compact_pill.screenshot(path=str(ARTIFACTS / "catalog-presence-pill.png"))
+                page.screenshot(
+                    path=str(ARTIFACTS / "catalog-desktop.png"), full_page=True,
+                    style="#clerk-components, nextjs-portal { visibility: hidden; }",
+                )
+                event_card.click()
                 expect(
                     page.get_by_role("heading", name="Código sin Fronteras", level=1)
                 ).to_be_visible()
+                breadcrumb = page.get_by_role("navigation", name="Ruta de navegación")
+                expect(breadcrumb.get_by_role("link", name="Explorar")).to_have_attribute("href", "/")
+                expect(breadcrumb.locator('[aria-current="page"]')).to_have_text("Código sin Fronteras")
                 sidebar = page.get_by_role("complementary")
                 expect(sidebar.get_by_role("region", name="Datos del evento")).to_contain_text(
                     "En línea"
                 )
-                expect(sidebar.get_by_role("region", name="Viendo ahora")).to_contain_text(
-                    "Simulación"
-                )
+                presence = page.get_by_role("region", name="Presencia en vivo")
+                live_status = presence.locator("[aria-live=polite]")
+                pill = presence.locator(".hs-presence")
+                count = pill.locator(".hs-presence-count")
+                expect(pill.get_by_text("En vivo", exact=True)).to_be_visible()
+                expect(count).to_have_text("0 viendo")
+                expect(pill).to_have_text("En vivo·0 viendo")
+                expect(live_status.get_by_text("0 viendo", exact=True)).to_have_count(1)
+                expect(live_status.get_by_text("+1 visitante", exact=True)).to_have_count(1)
+                expect(live_status.get_by_role("button")).to_have_count(0)
+                assert pill.locator(".hs-presence-dot").evaluate(
+                    "(dot) => getComputedStyle(dot, '::after').content"
+                ) == "none"
+                expect(presence.get_by_role("button", name="Ver quién está mirando")).to_have_count(0)
                 expect(
                     sidebar.get_by_role("region", name="Equipos buscando gente").get_by_role(
                         "listitem"
@@ -127,6 +154,57 @@ def check():
                 ).to_have_count(2)
                 page.get_by_role("link", name="Ver bases", exact=True).click()
                 expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras#bases")
+                navigations = []
+                page.on(
+                    "framenavigated",
+                    lambda frame: navigations.append(frame.url) if frame == page.main_frame else None,
+                )
+                other_context = browser.new_context(
+                    viewport={"width": 390, "height": 844}, reduced_motion="reduce"
+                )
+                try:
+                    other_page = other_context.new_page()
+                    other_page.on("pageerror", lambda err: page_errors.append(str(err)))
+                    other_page.goto(page.url, wait_until="domcontentloaded")
+                    expect(live_status.get_by_text("+2 visitantes", exact=True)).to_be_visible()
+                    expect(count).to_have_text("0 viendo")
+                    presence.screenshot(path=str(ARTIFACTS / "presence-two-viewers.png"))
+                    other_presence = other_page.get_by_role("region", name="Presencia en vivo")
+                    expect(other_presence.locator("[aria-live=polite]").get_by_text(
+                        "+2 visitantes", exact=True
+                    )).to_be_visible()
+                    expect(other_presence.locator(".hs-presence-count")).to_have_css(
+                        "animation-name", "none"
+                    )
+                    other_presence.screenshot(path=str(ARTIFACTS / "presence-mobile.png"))
+                    clean_capture = "#clerk-components, nextjs-portal { visibility: hidden; }"
+                    page.screenshot(
+                        path=str(ARTIFACTS / "profile-desktop.png"), full_page=True, style=clean_capture
+                    )
+                    other_page.screenshot(
+                        path=str(ARTIFACTS / "profile-mobile.png"), full_page=True, style=clean_capture
+                    )
+                    other_page.goto("about:blank", wait_until="domcontentloaded")
+                    expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=5_000)
+                finally:
+                    other_context.close()
+                expect(count).to_have_text("0 viendo")
+                extra_contexts = []
+                try:
+                    for _ in range(8):
+                        extra_context = browser.new_context()
+                        extra_contexts.append(extra_context)
+                        extra_context.new_page().goto(page.url, wait_until="domcontentloaded")
+                    expect(live_status.get_by_text("+9 visitantes", exact=True)).to_be_visible(timeout=20_000)
+                    expect(count).to_have_text("0 viendo")
+                    for extra_context in extra_contexts:
+                        extra_context.pages[0].evaluate("setTimeout(() => location.href = 'about:blank', 0)")
+                    expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=5_000)
+                finally:
+                    for extra_context in extra_contexts:
+                        extra_context.close()
+                assert not navigations, f"Presence updated after navigation: {navigations}"
+                presence.screenshot(path=str(ARTIFACTS / "presence-after-close.png"))
             finally:
                 # Always keep the screenshot, and never let a failure here hide the real error.
                 try:
@@ -139,7 +217,8 @@ def check():
         print("FAIL: uncaught page errors", *page_errors, sep="\n  ")
         return 1
     print(
-        f"PASS: {URL} connected to Convex, filtered events and opened a hackathon profile, "
+        f"PASS: {URL} connected to Convex, filtered events and opened a hackathon profile; "
+        "anonymous visitors changed 1 → 2 → 1 without changing the account pill; "
         "screenshot at artifacts/smoke.png"
     )
     return 0

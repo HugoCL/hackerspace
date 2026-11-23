@@ -1,22 +1,17 @@
-export type SampleEvent = {
-  slug: string;
-  title: string;
-  modality: "inPerson" | "virtual";
-  dates: string;
-  location: string;
-  organizer: string;
-  summary: string;
-  topics: readonly string[];
-  guidelines: string;
-  rules: string;
-};
+import type { Doc } from "./_generated/dataModel";
 
-export const sampleEvents: readonly SampleEvent[] = [
+type SampleHackathon = Omit<
+  Doc<"hackathons">,
+  "_id" | "_creationTime" | "isSample"
+>;
+
+export const sampleHackathons: SampleHackathon[] = [
   {
     slug: "santiago-hacks",
     title: "Santiago Hacks 2027",
     modality: "inPerson",
     dates: "13–14 mar 2027",
+    endsOn: "2027-03-14",
     location: "Santiago, Chile",
     organizer: "Comunidad Santiago Hacks",
     summary:
@@ -32,6 +27,7 @@ export const sampleEvents: readonly SampleEvent[] = [
     title: "Hack Puerto",
     modality: "inPerson",
     dates: "20–21 mar 2027",
+    endsOn: "2027-03-21",
     location: "Valparaíso, Chile",
     organizer: "Comunidad Hack Puerto",
     summary:
@@ -47,6 +43,7 @@ export const sampleEvents: readonly SampleEvent[] = [
     title: "Cordillera Lab",
     modality: "inPerson",
     dates: "10–11 abr 2027",
+    endsOn: "2027-04-11",
     location: "Mendoza, Argentina",
     organizer: "Comunidad Cordillera Lab",
     summary:
@@ -62,6 +59,7 @@ export const sampleEvents: readonly SampleEvent[] = [
     title: "Código sin Fronteras",
     modality: "virtual",
     dates: "27–28 mar 2027",
+    endsOn: "2027-03-28",
     location: "En línea",
     organizer: "Comunidad Código sin Fronteras",
     summary:

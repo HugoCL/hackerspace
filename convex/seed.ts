@@ -1,6 +1,7 @@
 import type { GenericId } from "convex/values";
 import type { TableNames } from "./_generated/dataModel";
 import { internalMutation, type MutationCtx } from "./_generated/server";
+import { sampleHackathons } from "./sampleHackathons";
 
 // Local deployments start empty, so every table needs sample data to develop against.
 //
@@ -13,7 +14,13 @@ import { internalMutation, type MutationCtx } from "./_generated/server";
 // deployment, so start `pnpm dev` first.
 type Seeder = (ctx: MutationCtx) => Promise<void>;
 
-export const seeders: Record<TableNames, Seeder> = {};
+export const seeders: Record<TableNames, Seeder> = {
+  hackathons: async (ctx) => {
+    for (const hackathon of sampleHackathons) {
+      await ctx.db.insert("hackathons", { ...hackathon, isSample: true });
+    }
+  },
+};
 
 const tables = Object.entries<Seeder>(seeders) as [TableNames, Seeder][];
 

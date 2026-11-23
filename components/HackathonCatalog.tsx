@@ -6,9 +6,11 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from "@ui-sdk/react/tabs";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { useState } from "react";
-import type { SampleEvent } from "@/app/hackathons/sample-events";
+import { localCalendarDate } from "@/app/calendar-date";
 import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
 import { EventMeta, Icon, ModalityBadge } from "./hackathon-ui";
+import PresenceIndicator from "./PresenceIndicator";
 
 const modalities = [
   { value: "inPerson", label: "Presenciales" },
@@ -19,7 +21,8 @@ function searchText(value: string) {
   return value.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase("es");
 }
 
-function CatalogCard({ event }: { event: SampleEvent }) {
+function CatalogCard({ event }: { event: Doc<"hackathons"> }) {
+  const attendance = useQuery(api.presence.count, { hackathonId: event._id });
   return (
     <Link
       className="hs-card hs-card--interactive hs-hcard"
@@ -42,21 +45,25 @@ function CatalogCard({ event }: { event: SampleEvent }) {
             </span>
           ))}
         </div>
+        <PresenceIndicator
+          compact
+          count={attendance?.count}
+          visitors={attendance?.visitors}
+        />
       </div>
     </Link>
   );
 }
 
-export default function HackathonCatalog({
-  events,
-}: {
-  events: readonly SampleEvent[];
-}) {
+export default function HackathonCatalog() {
   const [query, setQuery] = useState("");
   const status = useQuery(api.health.status, {});
+  const events = useQuery(api.hackathons.list, {
+    today: localCalendarDate(new Date()),
+  });
   const term = searchText(query.trim());
-  const matches = events.filter((event) =>
-    [event.title, event.location, ...event.topics].some((value) =>
+  const matches = events?.filter((event) =>
+    [event.title, event.location ?? "", ...event.topics].some((value) =>
       searchText(value).includes(term),
     ),
   );
@@ -86,17 +93,27 @@ export default function HackathonCatalog({
           ))}
         </TabsList>
         {modalities.map(({ value }) => {
-          const results = matches.filter((event) => event.modality === value);
+          const results = matches?.filter(
+            (event) => event.modality === value || event.modality === "hybrid",
+          );
           return (
             <TabsPanel className="prototype-panel" key={value} value={value}>
               <section className="hs-section">
                 <h2 className="hs-section-title">
                   Próximas hackathones{" "}
                   <span aria-live="polite" className="hs-section-count">
-                    {results.length}
+                    {results?.length}
                   </span>
                 </h2>
-                {results.length ? (
+                {!results ? (
+                  <div role="status">
+                    <span className="sr-only">Cargando hackathones…</span>
+                    <span
+                      aria-hidden="true"
+                      className="hs-skeleton hs-skeleton--block"
+                    />
+                  </div>
+                ) : results.length ? (
                   <div className="hs-grid prototype-grid">
                     {results.map((event) => (
                       <CatalogCard event={event} key={event.slug} />

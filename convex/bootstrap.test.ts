@@ -12,11 +12,11 @@ it("exposes the public connection status without a Clerk account", async () => {
   await expect(t.query(api.health.status, {})).resolves.toBe("ok");
 });
 
-it("can seed an empty schema repeatedly", async () => {
+it("can seed repeatedly without duplicating sample data", async () => {
   const t = convexTest(schema, modules);
 
   await expect(t.mutation(internal.seed.ensure, {})).resolves.toEqual({
-    seeded: [],
+    seeded: ["hackathons"],
   });
   await expect(t.mutation(internal.seed.ensure, {})).resolves.toEqual({
     seeded: [],
@@ -29,13 +29,13 @@ it("can run an empty migration list", async () => {
   await expect(t.mutation(internal.migrations.runAll, {})).resolves.toBeNull();
 });
 
-it("can reset an empty local deployment", async () => {
+it("can reset a local deployment", async () => {
   const t = convexTest(schema, modules);
   vi.stubEnv("CONVEX_CLOUD_URL", "http://127.0.0.1:3210");
 
   try {
     await expect(t.mutation(internal.seed.reset, {})).resolves.toEqual({
-      reset: [],
+      reset: ["hackathons"],
     });
   } finally {
     vi.unstubAllEnvs();

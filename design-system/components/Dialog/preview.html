@@ -1,0 +1,25 @@
+<!-- @dsCard group="Overlays" height=420 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Dialog</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+function Demo(){
+  var a = React.useState(false), b = React.useState(false);
+  return h(H.Stack,{direction:'row',gap:2},
+    h(H.Button,{variant:'signal',onClick:function(){a[1](true);}},'Postular'),
+    h(H.Button,{variant:'danger',onClick:function(){b[1](true);}},'Salir del equipo'),
+    h(H.Dialog,{open:a[0],onClose:function(){a[1](false);},title:'Postular a Los Compiladores',description:'El equipo ve tu perfil y este mensaje.',
+      footer:h(React.Fragment,null,h(H.Button,{variant:'ghost',onClick:function(){a[1](false);}},'Cancelar'),h(H.Button,{variant:'primary',onClick:function(){a[1](false);}},'Enviar postulación'))},
+      h(H.Select,{label:'Rol',options:['Frontend','Diseño']}),
+      h(H.Textarea,{label:'Mensaje',placeholder:'Cuéntales por qué quieres unirte',rows:3})),
+    h(H.Dialog,{open:b[0],onClose:function(){b[1](false);},title:'¿Salir de Los Compiladores?',description:'Tu lugar queda libre y otra persona puede tomarlo. Para volver tendrás que postular de nuevo.',
+      footer:h(React.Fragment,null,h(H.Button,{variant:'ghost',onClick:function(){b[1](false);}},'Quedarme'),h(H.Button,{variant:'danger',onClick:function(){b[1](false);}},'Salir del equipo'))}));
+}
+ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

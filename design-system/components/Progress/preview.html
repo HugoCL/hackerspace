@@ -1,0 +1,16 @@
+<!-- @dsCard group="Display" height=130 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Progress</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{gap:4,style:{maxWidth:360}},
+    h(H.Progress,{label:'Tu perfil',value:60,valueLabel:'3 de 5 pasos'}),
+    h(H.Progress,{label:'Cupos',value:38,max:50,valueLabel:'38 de 50',tone:'live'})));
+</script>
+</body>
+</html>

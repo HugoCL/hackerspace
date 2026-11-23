@@ -1,0 +1,16 @@
+<!-- @dsCard group="Forms" height=110 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Switch</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{gap:2},
+    h(H.Switch,{label:'Abierto a invitaciones de equipos',defaultChecked:true}),
+    h(H.Switch,{label:'Mostrar a otros cuando estoy viendo una hackathon',hint:'Apareces en "viendo" con tu foto.'})));
+</script>
+</body>
+</html>

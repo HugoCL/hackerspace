@@ -106,7 +106,13 @@ export default function HackathonCatalog() {
                   </span>
                 </h2>
                 {!results ? (
-                  <p role="status">Cargando hackathones…</p>
+                  <div role="status">
+                    <span className="sr-only">Cargando hackathones…</span>
+                    <span
+                      aria-hidden="true"
+                      className="hs-skeleton hs-skeleton--block"
+                    />
+                  </div>
                 ) : results.length ? (
                   <div className="hs-grid prototype-grid">
                     {results.map((event) => (

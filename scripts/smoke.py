@@ -126,6 +126,9 @@ def check():
                 expect(
                     page.get_by_role("heading", name="Código sin Fronteras", level=1)
                 ).to_be_visible()
+                breadcrumb = page.get_by_role("navigation", name="Ruta de navegación")
+                expect(breadcrumb.get_by_role("link", name="Explorar")).to_have_attribute("href", "/")
+                expect(breadcrumb.locator('[aria-current="page"]')).to_have_text("Perfil de hackathon")
                 sidebar = page.get_by_role("complementary")
                 expect(page.get_by_role("region", name="Datos del evento")).to_contain_text(
                     "En línea"
@@ -160,6 +163,10 @@ def check():
                 role_filter.fill("Frontend")
                 expect(teams.get_by_role("listitem")).to_have_count(1)
                 expect(teams.get_by_role("heading", name="Punto de Encuentro")).to_be_visible()
+                role_filter.clear()
+                expect(teams.get_by_role("listitem")).to_have_count(2)
+                role_filter.fill("rol inexistente")
+                expect(teams.locator(".hs-empty")).to_have_text("No encontramos equipos para ese rol.")
                 role_filter.clear()
                 expect(teams.get_by_role("listitem")).to_have_count(2)
                 teams.screenshot(path=str(ARTIFACTS / "teams-recruiting.png"))

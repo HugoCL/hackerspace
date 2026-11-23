@@ -67,13 +67,16 @@ export default async function HackathonProfile({
       header={
         <header className="hs-pagehead">
           <div className="hs-pagehead-text">
-            <div className="hs-pagehead-eyebrow">
-              <Link className="hs-link" href="/">
-                Explorar
-              </Link>
-              <span aria-hidden="true">/</span>
-              <span>Perfil de hackathon</span>
-            </div>
+            <nav aria-label="Ruta de navegación" className="hs-breadcrumb">
+              <ol>
+                <li>
+                  <Link className="hs-link" href="/">
+                    Explorar
+                  </Link>
+                </li>
+                <li aria-current="page">Perfil de hackathon</li>
+              </ol>
+            </nav>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="hs-pagehead-title">{event.title}</h1>
               {event.isSample && (

@@ -8,5 +8,5 @@ export function legacyLookingFor(roles?: string[]) {
   const joined = roles?.join(", ").trim() ?? "";
   return joined.length <= lookingForLimit
     ? joined
-    : joined.slice(0, lookingForLimit - 1).trimEnd() + "…";
+    : `${joined.slice(0, lookingForLimit - 1).trimEnd()}…`;
 }

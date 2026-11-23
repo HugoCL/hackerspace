@@ -290,7 +290,7 @@ function TeamConversation({
   const [body, setBody] = useState("");
   const { error, pending, run } = useTeamAction();
   const addition = useTeamAction();
-  const history = useRef<HTMLDivElement>(null);
+  const history = useRef<HTMLElement>(null);
   const newest = messages.results[0]?._id;
   const nearBottom = useRef(true);
   const [hasNewMessages, setHasNewMessages] = useState(false);
@@ -361,7 +361,7 @@ function TeamConversation({
           <ChatError message={addition.error} />
         </div>
       )}
-      <div
+      <section
         aria-label="Historial de mensajes"
         className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 [overflow-anchor:none]"
         onScroll={(event) => {
@@ -370,7 +370,7 @@ function TeamConversation({
           if (nearBottom.current) setHasNewMessages(false);
         }}
         ref={history}
-        role="region"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: Keyboard users need to scroll this independent history pane.
         tabIndex={0}
       >
         {unavailable ? (
@@ -450,7 +450,7 @@ function TeamConversation({
             </ol>
           </>
         )}
-      </div>
+      </section>
       {hasNewMessages && (
         <Button
           className="hs-btn hs-btn--secondary hs-btn--sm mx-auto mb-2 shrink-0"

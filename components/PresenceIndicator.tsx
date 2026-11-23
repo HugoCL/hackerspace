@@ -15,13 +15,13 @@ export default function PresenceIndicator({
         : `${count} mirando`;
 
   return (
-    <span className="inline-flex items-center gap-2 whitespace-nowrap font-(family-name:--font-mono) text-xs tabular-nums">
+    <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs tabular-nums">
       <span aria-hidden="true" className="inline-flex items-center gap-[3px]">
         {cells.map((cell) => (
           <span
             className={`size-[7px] border transition-colors duration-150 motion-reduce:transition-none ${
               cell <= (count ?? 0)
-                ? "border-(--hs-signal-ink) bg-(--hs-signal)"
+                ? "border-(--hs-live-ink) bg-(--hs-live)"
                 : "border-muted-foreground bg-transparent"
             }`}
             data-filled={cell <= (count ?? 0)}
@@ -32,6 +32,7 @@ export default function PresenceIndicator({
       <span
         aria-live={announce ? "polite" : undefined}
         aria-atomic={announce ? true : undefined}
+        className={count ? "text-(--hs-live-ink)" : undefined}
       >
         {label}
       </span>

@@ -149,6 +149,7 @@ def check():
                     other_page.goto(page.url, wait_until="domcontentloaded")
                     expect(count).to_have_text("2 mirando")
                     expect(cells).to_have_count(2)
+                    expect(cells.first).to_have_css("background-color", "rgb(234, 79, 18)")
                     presence.screenshot(path=str(ARTIFACTS / "presence-two-viewers.png"))
                     other_presence = other_page.get_by_role("region", name="Presencia en vivo")
                     expect(other_presence.locator("[aria-live=polite]")).to_have_text("2 mirando")

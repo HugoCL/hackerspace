@@ -40,12 +40,16 @@ async function onlineAccounts(ctx: QueryCtx, hackathonId: Id<"hackathons">) {
 
 export const heartbeat = mutation({
   args: {
+    hasProfileImage: v.optional(v.boolean()),
     hackathonId: v.id("hackathons"),
     sessionId: v.string(),
     visitorId: v.optional(v.string()),
   },
   returns: v.object({ roomToken: v.string(), sessionToken: v.string() }),
-  handler: async (ctx, { hackathonId, sessionId, visitorId }) => {
+  handler: async (
+    ctx,
+    { hackathonId, hasProfileImage, sessionId, visitorId },
+  ) => {
     if (!uuid.test(sessionId)) {
       throw new Error("Invalid presence session");
     }
@@ -69,7 +73,7 @@ export const heartbeat = mutation({
       heartbeatMs,
     );
     if (identity) {
-      const image = identity.pictureUrl;
+      const image = hasProfileImage === false ? undefined : identity.pictureUrl;
       await presence.updateRoomUser(ctx, roomId, userId, {
         name: identity.name || identity.nickname || "Participante",
         ...(image && /^https:\/\//i.test(image) ? { image } : {}),

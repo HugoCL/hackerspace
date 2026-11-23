@@ -160,6 +160,15 @@ def check():
                 expect(page.get_by_test_id("connection-status")).to_have_text(
                     "Conexión activa", timeout=60_000
                 )
+                sign_in_button = page.get_by_role("banner").get_by_role(
+                    "button", name="Iniciar sesión", exact=True
+                )
+                expect(sign_in_button).to_be_visible(timeout=30_000)
+                sign_in_button.click()
+                email_field = page.get_by_label("Correo electrónico", exact=True)
+                expect(email_field).to_be_visible(timeout=30_000)
+                page.keyboard.press("Escape")
+                expect(email_field).not_to_be_visible()
                 expect(page.get_by_role("heading", name="Santiago Hacks 2027")).to_be_visible()
                 search = page.get_by_role("searchbox", name="Buscar hackathones")
                 search.fill("santiago")

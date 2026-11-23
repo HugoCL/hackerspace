@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { Doc } from "@/convex/_generated/dataModel";
+import HeaderAuth from "./HeaderAuth";
 import SiteFooter from "./SiteFooter";
 
 const iconPaths = {
@@ -63,7 +64,12 @@ export function AppShell({
               Explorar
             </Link>
           </nav>
-          <span className="hs-badge hs-badge--neutral">Prototipo</span>
+          <div className="hs-shell-actions">
+            <span className="hs-badge hs-badge--neutral hs-shell-status">
+              Prototipo
+            </span>
+            <HeaderAuth />
+          </div>
         </div>
       </header>
       <div

@@ -62,6 +62,7 @@ export default function HackathonCatalog() {
     today: localCalendarDate(new Date()),
   });
   const term = searchText(query.trim());
+  const searching = Boolean(term && events?.length);
   const matches = events?.filter((event) =>
     [event.title, event.location ?? "", ...event.topics].some((value) =>
       searchText(value).includes(term),
@@ -120,19 +121,25 @@ export default function HackathonCatalog() {
                     ))}
                   </div>
                 ) : (
-                  <div className="hs-empty">
+                  <div className="hs-empty" role="status">
                     <h3 className="hs-empty-title">
-                      No encontramos hackathones
+                      {searching
+                        ? "No encontramos hackathones"
+                        : "Todavía no hay hackathones próximas"}
                     </h3>
                     <p className="hs-empty-desc">
-                      Prueba con otra ciudad, tema o nombre.
+                      {searching
+                        ? "Prueba con otra ciudad, tema o nombre."
+                        : "Vuelve pronto para descubrir nuevos eventos."}
                     </p>
-                    <Button
-                      className="hs-btn hs-btn--secondary"
-                      onClick={() => setQuery("")}
-                    >
-                      Limpiar búsqueda
-                    </Button>
+                    {searching && (
+                      <Button
+                        className="hs-btn hs-btn--secondary"
+                        onClick={() => setQuery("")}
+                      >
+                        Limpiar búsqueda
+                      </Button>
+                    )}
                   </div>
                 )}
               </section>

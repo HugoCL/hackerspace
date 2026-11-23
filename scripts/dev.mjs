@@ -18,11 +18,12 @@
 // or from .env.local, and CONVEX_AGENT_MODE is removed. Cloud mode refuses to start when the key
 // or CONVEX_DEPLOYMENT targets production (`prod:` prefix, or a legacy key with no prefix),
 // because this script pushes and seeds.
-// Before starting, a one-shot push seeds empty tables. Only anonymous local deployments
+// Before starting, configure the Clerk issuer on anonymous deployments and check it on cloud.
+// A one-shot push seeds empty tables. Only anonymous local deployments
 // also complete pending migrations before serving the app. Set DEV_SEED=0
 // to skip preparation. Both pushes share the same deployment selectors.
-// Extra arguments are forwarded to `convex dev` only. They can change the target (--url,
-// --configure, --env-file), so when any are given the seed step is skipped.
+// Extra arguments are forwarded to `convex dev` only. Auth preflight skips explicit target
+// overrides; seeding skips all extra arguments.
 // Stopping: convex cleans up `next dev` and the local backend only on SIGINT, so SIGINT, SIGTERM
 // and SIGHUP all send SIGINT to the running child, at most once. With a TTY a Ctrl-C already
 // reached the child from the terminal; if it is still alive 2 s later (a harness PTY may signal
@@ -32,9 +33,12 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { constants } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const CLERK_ISSUER_VAR = "CLERK_JWT_ISSUER_DOMAIN";
+const LOCAL_CLERK_ISSUER = "https://gorgeous-stallion-3913.clerk.accounts.dev";
 
 const KEY_VARS = ["CONVEX_DEPLOY_KEY", "CONVEX_DEPLOYMENT_TOKEN"];
 const SELECTORS = [
@@ -154,6 +158,8 @@ let stopping = false;
 let stopSignal = "SIGINT";
 let forwarded = false;
 let watching = false;
+let issuerGroup = null;
+let issuerShutdown = null;
 
 const alive = () =>
   child !== null && child.exitCode === null && child.signalCode === null;
@@ -165,12 +171,38 @@ function forwardSigint() {
   child.kill("SIGINT");
 }
 
+function signalGroup(pid, signal) {
+  try {
+    process.kill(-pid, signal);
+    return true;
+  } catch (err) {
+    if (err.code === "ESRCH") return false;
+    throw err;
+  }
+}
+
+async function stopIssuerGroup(pid) {
+  signalGroup(pid, "SIGTERM");
+  const deadline = Date.now() + 2_000;
+  while (signalGroup(pid, 0)) {
+    if (Date.now() >= deadline) {
+      signalGroup(pid, "SIGKILL");
+      break;
+    }
+    await delay(25);
+  }
+}
+
 // One handler for every stop signal. A terminal delivers Ctrl-C to the whole foreground group,
 // so the child normally has that SIGINT already; if it is still alive 2 s later, send it.
 for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
   process.on(signal, () => {
     stopping = true;
     stopSignal = signal;
+    if (issuerGroup !== null) {
+      issuerShutdown ??= stopIssuerGroup(issuerGroup);
+      return;
+    }
     if (signal === "SIGINT" && process.stdin.isTTY) {
       if (!watching) setTimeout(forwardSigint, 2000);
       watching = true;
@@ -181,25 +213,83 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
 }
 
 // Runs `convex <args>` and resolves with { code, signal }.
-function convex(args) {
+function convex(args, { capture = false, isolateIssuer = false } = {}) {
   return new Promise((resolveRun) => {
     if (stopping) return resolveRun({ code: null, signal: stopSignal });
-    child = spawn("convex", args, { cwd: root, env, stdio: "inherit" });
+    let stdout = "";
+    const detached = isolateIssuer && process.platform !== "win32";
+    child = spawn("convex", args, {
+      cwd: root,
+      env,
+      detached,
+      stdio: capture ? ["inherit", "pipe", "inherit"] : "inherit",
+    });
+    if (detached) issuerGroup = child.pid ?? null;
+    child.stdout?.setEncoding("utf8").on("data", (chunk) => {
+      stdout += chunk;
+    });
     child.on("error", (err) => {
       console.error(`dev: cannot start convex: ${err.message}`);
-      resolveRun({ code: 1, signal: null });
+      resolveRun({ code: 1, signal: null, stdout });
     });
-    child.on("exit", (code, signal) => resolveRun({ code, signal }));
+    child.on("close", (code, signal) => {
+      issuerGroup = null;
+      resolveRun({ code, signal, stdout });
+    });
   });
 }
 
 const exitCode = ({ code, signal }) =>
   code ?? 128 + (constants.signals[signal] ?? 0);
 
+const extraArgs = process.argv.slice(2);
+const targetOptions = new Set([
+  "--admin-key",
+  "--cloud",
+  "--configure",
+  "--deployment",
+  "--dev-deployment",
+  "--env-file",
+  "--local",
+  "--prod",
+  "--project",
+  "--team",
+  "--url",
+]);
+const skipAuthPreflight = extraArgs.some((arg) => {
+  const option = arg.split("=", 1)[0];
+  return targetOptions.has(option) || option === "--help" || option === "-h";
+});
+if (!skipAuthPreflight) {
+  if (mode.anonymous) {
+    const init = await convex(["init"]);
+    if (stopping || init.code !== 0) process.exit(exitCode(init));
+    const issuer = await convex(
+      ["env", "set", CLERK_ISSUER_VAR, LOCAL_CLERK_ISSUER],
+      { isolateIssuer: true },
+    );
+    if (stopping) {
+      await issuerShutdown;
+      process.exit(exitCode({ code: null, signal: stopSignal }));
+    }
+    if (issuer.code !== 0) process.exit(exitCode(issuer));
+  } else {
+    const issuer = await convex(["env", "get", CLERK_ISSUER_VAR], {
+      capture: true,
+    });
+    if (stopping || issuer.code !== 0) process.exit(exitCode(issuer));
+    if (!issuer.stdout.trim()) {
+      console.error(
+        `dev: missing ${CLERK_ISSUER_VAR} on the Convex deployment. Run \`npx convex env set ${CLERK_ISSUER_VAR} <Clerk Frontend API URL>\` against your dev deployment.`,
+      );
+      process.exit(1);
+    }
+  }
+}
+
 // `convex dev` runs either --run or --start after a push, not both, so the seed gets its own
 // one-shot push first. A failure there is not fatal: the normal run below shows the same error
 // and keeps watching.
-const extraArgs = process.argv.slice(2);
 if (process.env.DEV_SEED !== "0" && extraArgs.length > 0) {
   console.log("dev: extra arguments given, skipping the seed step");
 } else if (process.env.DEV_SEED !== "0") {

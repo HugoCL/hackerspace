@@ -15,6 +15,8 @@ import type * as migrations from "../migrations.js";
 import type * as presence from "../presence.js";
 import type * as sampleHackathons from "../sampleHackathons.js";
 import type * as seed from "../seed.js";
+import type * as teamText from "../teamText.js";
+import type * as teams from "../teams.js";
 
 import type {
   ApiFromModules,
@@ -30,6 +32,8 @@ declare const fullApi: ApiFromModules<{
   presence: typeof presence;
   sampleHackathons: typeof sampleHackathons;
   seed: typeof seed;
+  teamText: typeof teamText;
+  teams: typeof teams;
 }>;
 
 /**

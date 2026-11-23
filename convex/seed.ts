@@ -2,6 +2,7 @@ import type { GenericId } from "convex/values";
 import type { TableNames } from "./_generated/dataModel";
 import { internalMutation, type MutationCtx } from "./_generated/server";
 import { sampleHackathons } from "./sampleHackathons";
+import { teamSearchText } from "./teamText";
 
 // Local deployments start empty, so every table needs sample data to develop against.
 //
@@ -12,14 +13,60 @@ import { sampleHackathons } from "./sampleHackathons";
 // that are empty, so it is safe to run again. `pnpm seed` runs it by hand, `pnpm seed:reset`
 // wipes and reseeds a local deployment (it refuses to run anywhere else). Both talk to the running
 // deployment, so start `pnpm dev` first.
-type Seeder = (ctx: MutationCtx) => Promise<void>;
+type Seeder = (ctx: MutationCtx) => Promise<boolean>;
 
 export const seeders: Record<TableNames, Seeder> = {
   hackathons: async (ctx) => {
     for (const hackathon of sampleHackathons) {
       await ctx.db.insert("hackathons", { ...hackathon, isSample: true });
     }
+    return true;
   },
+  users: async () => false,
+  teams: async (ctx) => {
+    const hackathon = await ctx.db
+      .query("hackathons")
+      .withIndex("by_slug", (q) => q.eq("slug", "codigo-sin-fronteras"))
+      .unique();
+    if (!hackathon?.isSample) return false;
+    for (const [name, description, lookingFor] of [
+      [
+        "Punto de Encuentro",
+        "Un mapa de comunidades de código abierto.",
+        "Alguien con ojo para el diseño que convierta ideas en pantallas fáciles de explorar.",
+      ],
+      [
+        "Ruta Abierta",
+        "Una guía de contribuciones para principiantes.",
+        "Alguien que disfrute ordenar datos y explicar por dónde empezar.",
+      ],
+    ] as const) {
+      const ownerId = await ctx.db.insert("users", {
+        identityKey: `sample:${name}`,
+        displayName: "Equipo de ejemplo",
+      });
+      const teamId = await ctx.db.insert("teams", {
+        hackathonId: hackathon._id,
+        ownerId,
+        memberCount: 1,
+        name,
+        description,
+        lookingFor,
+        searchableText: teamSearchText(name, lookingFor),
+        recruitingStatus: "recruiting",
+      });
+      await ctx.db.insert("teamMembers", {
+        teamId,
+        userId: ownerId,
+        joinedAt: Date.now(),
+      });
+    }
+    return true;
+  },
+  teamMembers: async () => false,
+  teamJoinRequests: async () => false,
+  teamConversations: async () => false,
+  teamMessages: async () => false,
 };
 
 const tables = Object.entries<Seeder>(seeders) as [TableNames, Seeder][];
@@ -35,8 +82,7 @@ export const ensure = internalMutation({
     }
     for (const [table, seed] of tables) {
       if ((await ctx.db.query(table).first()) === null) {
-        await seed(ctx);
-        seeded.push(table);
+        if (await seed(ctx)) seeded.push(table);
       }
     }
     console.log(
@@ -49,7 +95,7 @@ export const ensure = internalMutation({
 });
 
 // Local deployments (`convex dev` anonymous or local) serve from the loopback address.
-function isLocalDeployment() {
+export function isLocalDeployment() {
   const url = process.env.CONVEX_CLOUD_URL;
   if (!url) return false;
   try {

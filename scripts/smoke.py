@@ -13,6 +13,9 @@ libraries, Linux only: .capy/setup.json uses it). Set PORT to change the port. I
 already in use it stops, because that server may come from another checkout. Set SMOKE_REUSE=1 to
 test the server already running there instead.
 
+On a Clerk-enabled Convex dev preview, set SMOKE_CLERK_OWNER and SMOKE_CLERK_APPLICANT
+to two +clerk_test email addresses to exercise the authenticated chat; this creates a test team.
+
 Stopping the server: scripts/dev.mjs runs in its own session and gets one SIGINT, which convex turns
 into a clean stop of `next dev` and the local backend (see scripts/dev.mjs). SIGINT, SIGTERM or
 SIGHUP sent to this script go through the same teardown, and further signals during it are
@@ -130,7 +133,7 @@ def check():
                 expect(breadcrumb.get_by_role("link", name="Explorar")).to_have_attribute("href", "/")
                 expect(breadcrumb.locator('[aria-current="page"]')).to_have_text("Código sin Fronteras")
                 sidebar = page.get_by_role("complementary")
-                expect(sidebar.get_by_role("region", name="Datos del evento")).to_contain_text(
+                expect(page.get_by_role("region", name="Datos del evento")).to_contain_text(
                     "En línea"
                 )
                 presence = page.get_by_role("region", name="Presencia en vivo")
@@ -147,13 +150,60 @@ def check():
                     "(dot) => getComputedStyle(dot, '::after').content"
                 ) == "none"
                 expect(presence.get_by_role("button", name="Ver quién está mirando")).to_have_count(0)
-                expect(
-                    sidebar.get_by_role("region", name="Equipos buscando gente").get_by_role(
-                        "listitem"
-                    )
-                ).to_have_count(2)
+                summary = sidebar.get_by_role("region", name="Resumen de equipos")
+                expect(summary).to_contain_text("2 equipos buscan gente")
+                summary.get_by_role("link", name="Ver equipos").click()
+                expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras?tab=equipos")
+                expect(sidebar).not_to_be_visible()
+                expect(page.get_by_role("tab", name="Equipos (2)")).to_have_attribute("aria-selected", "true")
+                teams = page.get_by_role("region", name="Equipos", exact=True)
+                expect(teams.get_by_role("listitem")).to_have_count(2)
+                sign_in = teams.get_by_role("button", name="Inicia sesión para conversar")
+                expect(sign_in).to_be_visible()
+                assert sign_in.bounding_box()["width"] < teams.bounding_box()["width"] / 2
+                recruiting_filter = teams.get_by_role("checkbox", name="Solo equipos que buscan integrantes")
+                recruiting_filter.click()
+                expect(recruiting_filter).to_be_checked()
+                expect(teams.get_by_role("listitem")).to_have_count(2)
+                team_search = teams.get_by_role("textbox", name="Buscar equipos")
+                team_search.fill("Diseño")
+                expect(teams.get_by_role("listitem")).to_have_count(1)
+                expect(teams.get_by_role("heading", name="Punto de Encuentro")).to_be_visible()
+                expect(teams.get_by_text("Qué buscan", exact=True)).to_be_visible()
+                expect(teams.get_by_text("1 integrante", exact=True)).to_be_visible()
+                description = teams.get_by_role(
+                    "button", name="Un mapa de comunidades de código abierto.", exact=True
+                )
+                expanded_description = teams.get_by_role("button", name="Descripción", exact=True)
+                full_description = teams.locator("[data-slot=collapsible-panel]").get_by_text(
+                    "Un mapa de comunidades de código abierto.", exact=True
+                )
+                expect(description).to_have_attribute("aria-expanded", "false")
+                expect(full_description).to_be_hidden()
+                description.press("Enter")
+                expect(expanded_description).to_have_attribute("aria-expanded", "true")
+                expect(full_description).to_be_visible()
+                expanded_description.press("Space")
+                expect(full_description).to_be_hidden()
+                team_search.fill("Ruta Abierta")
+                expect(teams.get_by_role("listitem")).to_have_count(1)
+                expect(teams.get_by_role("heading", name="Ruta Abierta")).to_be_visible()
+                team_search.clear()
+                expect(teams.get_by_role("listitem")).to_have_count(2)
+                team_search.fill("equipo inexistente")
+                expect(teams.locator(".hs-empty")).to_have_text("No encontramos equipos para esa búsqueda.")
+                team_search.clear()
+                expect(teams.get_by_role("listitem")).to_have_count(2)
+                teams.screenshot(path=str(ARTIFACTS / "teams-recruiting.png"))
+                clean_capture = "#clerk-components, nextjs-portal { visibility: hidden; }"
+                page.screenshot(path=str(ARTIFACTS / "teams-desktop.png"), full_page=True, style=clean_capture)
+                page.set_viewport_size({"width": 390, "height": 844})
+                page.screenshot(path=str(ARTIFACTS / "teams-mobile.png"), full_page=True, style=clean_capture)
+                page.set_viewport_size({"width": 1280, "height": 720})
+                page.get_by_role("tab", name="Resumen").click()
                 page.get_by_role("link", name="Ver bases", exact=True).click()
-                expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras#bases")
+                expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras?tab=bases")
+                expect(page.get_by_role("tabpanel", name="Bases y reglas")).to_be_visible()
                 navigations = []
                 page.on(
                     "framenavigated",
@@ -163,11 +213,28 @@ def check():
                     viewport={"width": 390, "height": 844}, reduced_motion="reduce"
                 )
                 try:
+                    catalog_page = browser.new_page()
+                    catalog_page.clock.set_fixed_time(CATALOG_DATE)
+                    catalog_page.on("pageerror", lambda err: page_errors.append(str(err)))
+                    catalog_page.goto(URL, wait_until="domcontentloaded")
+                    catalog_page.get_by_role("tab", name="Virtuales").click()
+                    catalog_card = catalog_page.get_by_role("link", name="Código sin Fronteras", exact=False)
+                    expect(catalog_card.get_by_text("+1 visitante", exact=True)).to_be_visible()
                     other_page = other_context.new_page()
                     other_page.on("pageerror", lambda err: page_errors.append(str(err)))
                     other_page.goto(page.url, wait_until="domcontentloaded")
                     expect(live_status.get_by_text("+2 visitantes", exact=True)).to_be_visible()
                     expect(count).to_have_text("0 viendo")
+                    expect(catalog_card.get_by_text("+2 visitantes", exact=True)).to_be_visible()
+                    expect(catalog_card.locator(".hs-presence--sm")).to_have_text("0 viendo")
+                    clean_capture = "#clerk-components, nextjs-portal { visibility: hidden; }"
+                    catalog_card.screenshot(
+                        path=str(ARTIFACTS / "catalog-live-viewers.png"),
+                        style=clean_capture,
+                    )
+                    catalog_page.screenshot(
+                        path=str(ARTIFACTS / "catalog-desktop.png"), full_page=True, style=clean_capture
+                    )
                     presence.screenshot(path=str(ARTIFACTS / "presence-two-viewers.png"))
                     other_presence = other_page.get_by_role("region", name="Presencia en vivo")
                     expect(other_presence.locator("[aria-live=polite]").get_by_text(
@@ -177,7 +244,6 @@ def check():
                         "animation-name", "none"
                     )
                     other_presence.screenshot(path=str(ARTIFACTS / "presence-mobile.png"))
-                    clean_capture = "#clerk-components, nextjs-portal { visibility: hidden; }"
                     page.screenshot(
                         path=str(ARTIFACTS / "profile-desktop.png"), full_page=True, style=clean_capture
                     )
@@ -189,6 +255,7 @@ def check():
                 finally:
                     other_context.close()
                 expect(count).to_have_text("0 viendo")
+                expect(catalog_card.get_by_text("+1 visitante", exact=True)).to_be_visible()
                 extra_contexts = []
                 try:
                     for _ in range(8):
@@ -197,6 +264,8 @@ def check():
                         extra_context.new_page().goto(page.url, wait_until="domcontentloaded")
                     expect(live_status.get_by_text("+9 visitantes", exact=True)).to_be_visible(timeout=20_000)
                     expect(count).to_have_text("0 viendo")
+                    expect(catalog_card.get_by_text("+9 visitantes", exact=True)).to_be_visible()
+                    expect(catalog_card.locator(".hs-presence--sm")).to_have_text("0 viendo")
                     for extra_context in extra_contexts:
                         extra_context.pages[0].evaluate("setTimeout(() => location.href = 'about:blank', 0)")
                     expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=5_000)
@@ -205,12 +274,30 @@ def check():
                         extra_context.close()
                 assert not navigations, f"Presence updated after navigation: {navigations}"
                 presence.screenshot(path=str(ARTIFACTS / "presence-after-close.png"))
+                profile_url = f"{URL}/hackathons/codigo-sin-fronteras"
+                page.goto(f"{profile_url}#bases")
+                expect(page.get_by_role("tabpanel", name="Bases y reglas")).to_be_visible()
+                page.get_by_role("tab", name="Resumen").click()
+                expect(page).to_have_url(profile_url)
+                expect(page.get_by_role("tabpanel", name="Resumen")).to_be_visible()
+                page.goto(f"{profile_url}#sample-teams")
+                expect(page.get_by_role("tabpanel", name="Equipos", exact=False)).to_be_visible()
+                page.goto(f"{profile_url}?tab=resumen#bases")
+                expect(page.get_by_role("tabpanel", name="Resumen")).to_be_visible()
             finally:
                 # Always keep the screenshot, and never let a failure here hide the real error.
                 try:
                     page.screenshot(path=str(ARTIFACTS / "smoke.png"), full_page=True)
                 except Exception as err:
                     print(f"smoke: could not save the screenshot: {err}")
+            owner = os.environ.get("SMOKE_CLERK_OWNER")
+            applicant = os.environ.get("SMOKE_CLERK_APPLICANT")
+            if owner or applicant:
+                if not owner or not applicant or any("+clerk_test@" not in email for email in (owner, applicant)):
+                    raise ValueError("Authenticated smoke requires two Clerk test emails")
+                from smoke_chat import check_chat
+
+                check_chat(browser, URL, owner, applicant)
         finally:
             browser.close()
     if page_errors:
@@ -218,7 +305,7 @@ def check():
         return 1
     print(
         f"PASS: {URL} connected to Convex, filtered events and opened a hackathon profile; "
-        "anonymous visitors changed 1 → 2 → 1 without changing the account pill; "
+        "profile and catalog visitors changed 1 → 2 → 1 without changing the account pill; "
         "screenshot at artifacts/smoke.png"
     )
     return 0

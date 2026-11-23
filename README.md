@@ -19,6 +19,10 @@ pnpm smoke      # Playwright; inicia el servidor si no está corriendo
 
 `pnpm smoke` requiere Python 3 e instala Chromium en el primer arranque. Con el servidor ya iniciado, usa `SMOKE_REUSE=1 pnpm smoke`. Si usas Claude Code, ejecuta `pnpm skills:link` una vez para enlazar las skills.
 
+Si ya tienes equipos con roles, sincroniza primero este esquema compatible con ambos formatos y luego ejecuta `pnpm migrate` en ese mismo entorno. Hasta que termine, el listado muestra los roles anteriores, pero la búsqueda solo encuentra equipos ya migrados. Elimina los campos anteriores del esquema únicamente después de verificar que la migración terminó en todos los entornos que se vayan a actualizar.
+
+La misma migración rellena el contador de integrantes de los equipos existentes. `pnpm dev` ejecuta las migraciones automáticamente solo en Convex anónimo local; `DEV_SEED=0` omite el seed y las migraciones automáticas. En un despliegue dev en la nube, ejecuta `pnpm migrate` manualmente tras confirmar el entorno. El listado omite el contador de un equipo hasta que se haya rellenado, en lugar de consultar su membresía. Haz obligatorio `memberCount` en el esquema solo después de verificar que el backfill terminó en cada entorno que se vaya a actualizar.
+
 - [`AGENTS.md`](AGENTS.md): stack, comandos y skills por fase.
 - [`GLOSSARY.md`](GLOSSARY.md): vocabulario del producto.
 - [`design-system/`](design-system/README.md): marca, tokens (`tokens.json`, `tokens.css`), guías de layouts y vistas, y 23 componentes de referencia con su preview.

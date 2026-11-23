@@ -23,4 +23,73 @@ const hackathons = defineTable({
   .index("by_slug", ["slug"])
   .index("by_ends_on", ["endsOn"]);
 
-export default defineSchema({ hackathons });
+export const teamDetails = v.object({
+  name: v.string(),
+  description: v.string(),
+  lookingFor: v.string(),
+  recruitingStatus: v.union(v.literal("recruiting"), v.literal("closed")),
+});
+export const joinRequestStatus = v.union(
+  v.literal("pending"),
+  v.literal("accepted"),
+  v.literal("rejected"),
+);
+
+export default defineSchema({
+  hackathons,
+  users: defineTable({
+    identityKey: v.string(),
+    displayName: v.string(),
+  }).index("by_identityKey", ["identityKey"]),
+  teams: defineTable({
+    hackathonId: v.id("hackathons"),
+    ownerId: v.id("users"),
+    ...teamDetails.omit("lookingFor").fields,
+    lookingFor: v.optional(v.string()),
+    memberCount: v.optional(v.number()),
+    searchableText: v.optional(v.string()),
+    rolesWanted: v.optional(v.array(v.string())),
+    searchableRoles: v.optional(v.string()),
+    archivedRoles: v.optional(v.array(v.string())),
+  })
+    .index("by_hackathonId_and_recruitingStatus", [
+      "hackathonId",
+      "recruitingStatus",
+    ])
+    .index("by_hackathonId", ["hackathonId"])
+    .index("by_ownerId", ["ownerId"])
+    .searchIndex("search_searchableText", {
+      searchField: "searchableText",
+      filterFields: ["hackathonId", "recruitingStatus"],
+    }),
+  teamMembers: defineTable({
+    teamId: v.id("teams"),
+    userId: v.id("users"),
+    joinedAt: v.number(),
+  })
+    .index("by_teamId_and_userId", ["teamId", "userId"])
+    .index("by_userId", ["userId"]),
+  // Retained for existing data; conversations do not expose legacy requests.
+  teamJoinRequests: defineTable({
+    teamId: v.id("teams"),
+    requesterId: v.id("users"),
+    status: joinRequestStatus,
+    decidedAt: v.optional(v.number()),
+    decidedBy: v.optional(v.id("users")),
+  })
+    .index("by_teamId_and_status", ["teamId", "status"])
+    .index("by_teamId_and_requesterId", ["teamId", "requesterId"])
+    .index("by_requesterId", ["requesterId"]),
+  teamConversations: defineTable({
+    teamId: v.id("teams"),
+    participantId: v.id("users"),
+    updatedAt: v.number(),
+  })
+    .index("by_teamId_and_participantId", ["teamId", "participantId"])
+    .index("by_teamId_and_updatedAt", ["teamId", "updatedAt"]),
+  teamMessages: defineTable({
+    conversationId: v.id("teamConversations"),
+    senderId: v.id("users"),
+    body: v.string(),
+  }).index("by_conversationId", ["conversationId"]),
+});

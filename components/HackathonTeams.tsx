@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@ui-sdk/react/dialog";
+import { Field, FieldDescription, FieldLabel } from "@ui-sdk/react/field";
 import { Input } from "@ui-sdk/react/input";
 import { Textarea } from "@ui-sdk/react/textarea";
 import {
@@ -20,13 +21,7 @@ import {
   useQuery,
 } from "convex/react";
 import { ConvexError } from "convex/values";
-import {
-  type FormEvent,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type FormEvent, useLayoutEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { lookingForLimit } from "@/convex/teamText";
@@ -69,7 +64,6 @@ function TeamForm({
   onCancel: () => void;
 }) {
   const { pending, error, run } = useTeamAction();
-  const fieldId = useId();
   const [lookingFor, setLookingFor] = useState(team?.lookingFor ?? "");
   const [recruiting, setRecruiting] = useState(
     team?.recruitingStatus !== "closed",
@@ -93,62 +87,51 @@ function TeamForm({
       className="hs-card grid! gap-3!"
       onSubmit={submit}
     >
-      <label className="grid gap-1 text-sm" htmlFor={`${fieldId}-name`}>
-        Nombre del equipo
+      <Field className="grid gap-1 text-sm" name="name">
+        <FieldLabel>Nombre del equipo</FieldLabel>
         <Input
           className="hs-input-control"
           defaultValue={team?.name}
-          id={`${fieldId}-name`}
           maxLength={70}
-          name="name"
           required
         />
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor={`${fieldId}-description`}>
-        Descripción
+      </Field>
+      <Field className="grid gap-1 text-sm" name="description">
+        <FieldLabel>Descripción</FieldLabel>
         <Textarea
           className="hs-input-control hs-textarea"
           defaultValue={team?.description}
-          id={`${fieldId}-description`}
           maxLength={400}
-          name="description"
           required
           rows={3}
         />
-      </label>
-      <div className="grid gap-1 text-sm">
-        <label htmlFor={`${fieldId}-looking-for`}>Qué buscan</label>
+      </Field>
+      <Field className="grid gap-1 text-sm" name="lookingFor">
+        <FieldLabel>Qué buscan</FieldLabel>
         <Textarea
-          aria-describedby={`${fieldId}-looking-for-count`}
           className="hs-input-control hs-textarea"
-          id={`${fieldId}-looking-for`}
           maxLength={lookingForLimit}
-          name="lookingFor"
           onValueChange={setLookingFor}
           placeholder="Por ejemplo: alguien que se anime a entrevistar a usuarios."
           rows={2}
           value={lookingFor}
         />
-        <p
-          className="text-right text-xs text-muted-foreground"
-          id={`${fieldId}-looking-for-count`}
-        >
+        <FieldDescription className="text-right text-xs text-muted-foreground">
           {lookingFor.length} / {lookingForLimit} caracteres
-        </p>
-      </div>
-      <label className="hs-check" htmlFor={`${fieldId}-recruiting`}>
+        </FieldDescription>
+      </Field>
+      <Field className="hs-check">
         <Checkbox
           className="hs-check-input data-checked:border-primary! data-checked:bg-primary!"
           checked={recruiting}
-          id={`${fieldId}-recruiting`}
           onCheckedChange={(value) => setRecruiting(value === true)}
         >
           <CheckboxIndicator aria-hidden="true">
             <Icon name="check" />
           </CheckboxIndicator>
         </Checkbox>
-        <span className="hs-check-label">Buscamos integrantes</span>
-      </label>
+        <FieldLabel className="hs-check-label">Buscamos integrantes</FieldLabel>
+      </Field>
       {error && <p role="alert">{error}</p>}
       <div className="flex flex-wrap gap-2">
         <Button
@@ -309,7 +292,11 @@ function TeamConversation({
   const addition = useTeamAction();
   const history = useRef<HTMLDivElement>(null);
   const newest = messages.results[0]?._id;
-  const olderHeight = useRef<number | null>(null);
+  const nearBottom = useRef(true);
+  const [hasNewMessages, setHasNewMessages] = useState(false);
+  const olderAnchor = useRef<{ node: HTMLElement; offsetTop: number } | null>(
+    null,
+  );
   const unavailable =
     conversation === null ||
     prospectContact === null ||
@@ -317,15 +304,18 @@ function TeamConversation({
 
   useLayoutEffect(() => {
     const pane = history.current;
-    if (pane && newest && !unavailable) pane.scrollTop = pane.scrollHeight;
+    if (!pane || !newest || unavailable) return;
+    if (nearBottom.current) pane.scrollTop = pane.scrollHeight;
+    else setHasNewMessages(true);
   }, [newest, unavailable]);
 
   const loadingOlder = messages.status === "LoadingMore";
   useLayoutEffect(() => {
     const pane = history.current;
-    if (pane && !loadingOlder && olderHeight.current !== null) {
-      pane.scrollTop += pane.scrollHeight - olderHeight.current;
-      olderHeight.current = null;
+    if (pane && !loadingOlder && olderAnchor.current) {
+      const { node, offsetTop } = olderAnchor.current;
+      pane.scrollTop += node.offsetTop - offsetTop;
+      olderAnchor.current = null;
     }
   }, [loadingOlder]);
 
@@ -372,8 +362,16 @@ function TeamConversation({
         </div>
       )}
       <div
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4"
+        aria-label="Historial de mensajes"
+        className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 [overflow-anchor:none]"
+        onScroll={(event) => {
+          const { clientHeight, scrollHeight, scrollTop } = event.currentTarget;
+          nearBottom.current = scrollHeight - clientHeight - scrollTop <= 24;
+          if (nearBottom.current) setHasNewMessages(false);
+        }}
         ref={history}
+        role="region"
+        tabIndex={0}
       >
         {unavailable ? (
           <p className="m-auto text-sm text-muted-foreground" role="status">
@@ -398,7 +396,10 @@ function TeamConversation({
                 className="hs-btn hs-btn--ghost mb-3 shrink-0 self-center"
                 disabled={loadingOlder}
                 onClick={() => {
-                  olderHeight.current = history.current?.scrollHeight ?? null;
+                  const node =
+                    history.current?.querySelector<HTMLElement>("ol > li");
+                  if (node)
+                    olderAnchor.current = { node, offsetTop: node.offsetTop };
                   messages.loadMore(20);
                 }}
               >
@@ -450,6 +451,21 @@ function TeamConversation({
           </>
         )}
       </div>
+      {hasNewMessages && (
+        <Button
+          className="hs-btn hs-btn--secondary hs-btn--sm mx-auto mb-2 shrink-0"
+          onClick={() => {
+            const pane = history.current;
+            if (!pane) return;
+            nearBottom.current = true;
+            pane.scrollTop = pane.scrollHeight;
+            pane.focus({ preventScroll: true });
+            setHasNewMessages(false);
+          }}
+        >
+          Nuevos mensajes ↓
+        </Button>
+      )}
       {!unavailable && (
         <form
           className="shrink-0 border-t border-border bg-[var(--hs-surface)] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
@@ -597,7 +613,7 @@ function ConversationDialog({
         {label}
       </DialogTrigger>
       <DialogBackdrop className="bg-foreground/55!" />
-      <DialogContent className="hs-dialog hs-dialog--drawer fixed inset-y-0 right-0 left-auto z-50 m-0! flex h-dvh! max-h-none! w-full! flex-col gap-0 overflow-hidden rounded-none! border-0! bg-background! p-0 shadow-none! sm:w-[420px]! sm:border-l! sm:border-border!">
+      <DialogContent className="hs-dialog hs-dialog--drawer fixed inset-y-0 right-0 left-auto z-50 m-0! flex h-dvh! max-h-none! w-full! flex-col gap-0 overflow-clip! rounded-none! border-0! bg-background! p-0 shadow-none! sm:w-[420px]! sm:border-l! sm:border-border!">
         {children}
       </DialogContent>
     </Dialog>
@@ -665,7 +681,6 @@ export default function HackathonTeams({
   const [recruitingOnly, setRecruitingOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
-  const filterId = useId();
   const create = useMutation(api.teams.create);
   const { results, status, loadMore } = usePaginatedQuery(
     api.teams.list,
@@ -679,32 +694,30 @@ export default function HackathonTeams({
         Equipos
       </h2>
       <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-        <label className="grid gap-1 text-sm" htmlFor={`${filterId}-search`}>
-          Buscar equipos
+        <Field className="grid gap-1 text-sm">
+          <FieldLabel>Buscar equipos</FieldLabel>
           <Input
             className="hs-input-control"
-            id={`${filterId}-search`}
             maxLength={lookingForLimit}
             placeholder="Nombre o qué buscan"
             value={search}
             onValueChange={setSearch}
           />
-        </label>
-        <label className="hs-check min-h-8 items-center!" htmlFor={filterId}>
+        </Field>
+        <Field className="hs-check min-h-8 items-center!">
           <Checkbox
             className="hs-check-input data-checked:border-primary! data-checked:bg-primary!"
             checked={recruitingOnly}
-            id={filterId}
             onCheckedChange={(value) => setRecruitingOnly(value === true)}
           >
             <CheckboxIndicator aria-hidden="true">
               <Icon name="check" />
             </CheckboxIndicator>
           </Checkbox>
-          <span className="hs-check-label">
+          <FieldLabel className="hs-check-label">
             Solo equipos que buscan integrantes
-          </span>
-        </label>
+          </FieldLabel>
+        </Field>
         {isAuthenticated && !creating && (
           <Button
             className="hs-btn hs-btn--primary sm:ml-auto"

@@ -1,9 +1,11 @@
 /// <reference types="vite/client" />
 import migrations from "@convex-dev/migrations/test";
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
 import { convexTest } from "convex-test";
 import { expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
-import schema from "./schema";
+import schema, { teamDetails } from "./schema";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
 
@@ -25,7 +27,19 @@ it("can seed repeatedly without duplicating sample data", async () => {
 });
 
 it("converts existing team roles to bounded, searchable free text", async () => {
-  const t = convexTest(schema, modules);
+  const transitionalSchema = defineSchema({
+    ...schema.tables,
+    teams: defineTable({
+      hackathonId: v.id("hackathons"),
+      ownerId: v.id("users"),
+      ...teamDetails.omit("lookingFor").fields,
+      lookingFor: v.optional(v.string()),
+      searchableText: v.optional(v.string()),
+      rolesWanted: v.optional(v.array(v.string())),
+      searchableRoles: v.optional(v.string()),
+    }),
+  });
+  const t = convexTest(transitionalSchema, modules);
   migrations.register(t);
   await t.mutation(internal.seed.ensure, {});
   await t.run(async (ctx) => {

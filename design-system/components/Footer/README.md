@@ -15,7 +15,7 @@ El pie de página, y el único lugar donde el nombre se mueve: "hacker" muta a o
 | never settlers | entra corriendo y no se queda quieta | una flecha con estela pasa por encima una y otra vez |
 | tinkerers | cada letra se atornilla al pasar el engranaje | un engranaje rueda sobre la palabra y queda girando con otro más chico |
 | newcomers | las letras saltan con rebote | destellos alrededor |
-| night owls | se encienden de a una, como ventanas | unos ojos de búho se abren arriba y parpadean |
+| night owls | se encienden de a una, como ventanas | dos ojos de búho se abren arriba, miran a los lados y parpadean |
 | misfits | caen torcidas y la "f" se queda chueca | tres círculos en fila y un cuadrado que cae torcido |
 | makers | se imprimen de abajo hacia arriba | un martillo da tres golpes y la palabra se sacude |
 | weekend founders | se voltean como hojas de calendario | aparece un calendario y "weekend" queda marcado en lima |

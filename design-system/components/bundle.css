@@ -465,9 +465,12 @@ body { margin: 0; background: var(--ui-background); color: var(--ui-foreground);
 .hs-footer-mark[data-word="night-owls"] .hs-footer-ch:nth-child(3n) { animation-delay: .25s; }
 .hs-footer-mark[data-word="night-owls"] .hs-footer-ch:nth-child(5n) { animation-delay: .75s; }
 @keyframes hs-w-light { from { opacity: .12; } 40% { opacity: .9; } 55% { opacity: .3; } 70% { opacity: 1; } }
-.hs-footer-mark[data-word="night-owls"] .hs-footer-fx i:nth-child(1) { display: block; --g: var(--g-owl); width: 0.75em; height: 0.75em; left: 62%; top: -0.675em; transform-origin: 50% 46%; animation: hs-fx-eyes-open .35s ease-out .9s both, hs-fx-blink 2.2s ease-in-out 1.5s infinite; }
-@keyframes hs-fx-eyes-open { from { transform: scaleY(0); opacity: 0; } }
-@keyframes hs-fx-blink { 0%, 40%, 52%, 58%, 70%, 100% { transform: scaleY(1); } 46%, 64% { transform: scaleY(.1); } }
+.hs-footer-mark[data-word="night-owls"] .hs-footer-fx i:nth-child(-n+2) { display: block; -webkit-mask: none; mask: none; box-sizing: border-box; width: .36em; height: .36em; left: 58%; top: -.56em; border: .045em solid var(--ui-foreground); border-radius: 50%; background: radial-gradient(circle, var(--ui-foreground) 0 .062em, transparent .068em) 0 0 / 100% 100% no-repeat; animation: hs-fx-eye-open .3s cubic-bezier(.3, 1.4, .5, 1) .9s both, hs-fx-look 4.2s ease-in-out 1.4s infinite, hs-fx-lid 4.2s linear 1.4s infinite; }
+.hs-footer-mark[data-word="night-owls"] .hs-footer-fx i:nth-child(2) { left: calc(58% + .4em); }
+.hs-footer-mark[data-word="night-owls"] .hs-footer-fx i:nth-child(3) { display: block; -webkit-mask: none; mask: none; width: .13em; height: .12em; left: calc(58% + .315em); top: -.2em; clip-path: polygon(0 0, 100% 0, 50% 100%); animation: hs-fx-eye-open .3s cubic-bezier(.3, 1.4, .5, 1) 1s both; }
+@keyframes hs-fx-eye-open { from { scale: 0; opacity: 0; } }
+@keyframes hs-fx-look { 0%, 18% { background-position: 0 0; } 28%, 46% { background-position: -.07em 0; } 58%, 78% { background-position: .07em 0; } 88%, 100% { background-position: 0 0; } }
+@keyframes hs-fx-lid { 0%, 49%, 55%, 100% { transform: scaleY(1); } 52% { transform: scaleY(.08); } }
 
 /* misfits: they land crooked and one stays that way; so does the one square among the circles */
 .hs-footer-mark[data-word="misfits"] .hs-footer-ch { --r: 16deg; animation: hs-w-misfit .55s cubic-bezier(.3, 1.3, .5, 1) both; animation-delay: calc(var(--i) * 50ms); }

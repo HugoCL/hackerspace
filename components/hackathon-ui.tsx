@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { Doc } from "@/convex/_generated/dataModel";
 import HeaderAuth from "./HeaderAuth";
+import ScoutNavLink from "./ScoutNavLink";
 import SiteFooter from "./SiteFooter";
 
 const iconPaths = {
@@ -39,13 +40,13 @@ export function Icon({ name }: { name: keyof typeof iconPaths }) {
 export function AppShell({
   children,
   aside,
-  exploring = false,
+  current,
   footerVariant = "compact",
   year,
 }: {
   children: ReactNode;
   aside?: ReactNode;
-  exploring?: boolean;
+  current?: "explore" | "scout";
   footerVariant?: "animated" | "compact";
   year: number;
 }) {
@@ -59,12 +60,13 @@ export function AppShell({
           </Link>
           <nav aria-label="Principal" className="hs-shell-nav">
             <Link
-              aria-current={exploring ? "page" : undefined}
+              aria-current={current === "explore" ? "page" : undefined}
               className="hs-shell-link"
               href="/"
             >
               Explorar
             </Link>
+            <ScoutNavLink current={current === "scout"} />
           </nav>
           <div className="hs-shell-actions">
             <span className="hs-badge hs-badge--neutral hs-shell-status">

@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@clerk/localizations':
+        specifier: 4.26.2
+        version: 4.26.2(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/nextjs':
         specifier: 7.7.9
         version: 7.7.9(next@16.4.6(@babel/core@7.29.13(supports-color@7.2.0))(@types/node@26.6.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -305,6 +308,10 @@ packages:
     peerDependencies:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
       react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
+
+  '@clerk/localizations@4.26.2':
+    resolution: {integrity: sha512-tYfbCgHqOyZ1DFK81jYxa+8nrv2VkGQrEfgHGDRECOuK5IvG45wR+egeJrQZGyRSit6Ohi8yT9dRB7tzEQmviA==}
+    engines: {node: '>=20.9.0'}
 
   '@clerk/nextjs@7.7.9':
     resolution: {integrity: sha512-6niXLthsXYDwmH2pD0qL7Ut499p6/ucect1Ks9WQp+rVC5va+rTYGEy9pkKKWWePnO4oYf7ncmzJmjFYZXM0Hg==}
@@ -2026,6 +2033,13 @@ snapshots:
       react-dom: 19.3.1(react@19.3.1)
       tslib: 2.8.1
     optional: true
+
+  '@clerk/localizations@4.26.2(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@clerk/shared': 4.48.2(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+    transitivePeerDependencies:
+      - react
+      - react-dom
 
   '@clerk/nextjs@7.7.9(next@16.4.6(@babel/core@7.29.13(supports-color@7.2.0))(@types/node@26.6.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:

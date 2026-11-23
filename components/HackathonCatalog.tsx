@@ -10,6 +10,7 @@ import { localCalendarDate } from "@/app/calendar-date";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { EventMeta, Icon, ModalityBadge } from "./hackathon-ui";
+import PresenceIndicator from "./PresenceIndicator";
 
 const modalities = [
   { value: "inPerson", label: "Presenciales" },
@@ -44,17 +45,7 @@ function CatalogCard({ event }: { event: Doc<"hackathons"> }) {
             </span>
           ))}
         </div>
-        {count !== undefined && (
-          <span
-            className={`hs-badge hs-badge--${count > 0 ? "live" : "neutral"}`}
-          >
-            {count === 1
-              ? "1 persona viendo"
-              : count > 1000
-                ? "Más de 1000 personas viendo"
-                : `${count} personas viendo`}
-          </span>
-        )}
+        <PresenceIndicator count={count} />
       </div>
     </Link>
   );

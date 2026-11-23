@@ -102,7 +102,14 @@ export const search = internalAction({
       );
       const recorded: { inserted: number; updated: number; seen: number } =
         await ctx.runMutation(internal.scout.record, { observations });
-      return { ok: true, found: observations.length, skipped, ...recorded };
+      const result = {
+        ok: true,
+        found: observations.length,
+        skipped,
+        ...recorded,
+      };
+      console.log(`scout: search "${query}"`, result);
+      return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`scout: search "${query}" failed: ${message}`);
@@ -140,7 +147,7 @@ export const record = internalMutation({
         });
         counts.inserted++;
       } else if (existing.reviewStatus === "pending") {
-        await ctx.db.patch(existing._id, {
+        await ctx.db.patch("scoutCandidates", existing._id, {
           proposal,
           provenance,
           discoveredFromUrl,
@@ -148,7 +155,9 @@ export const record = internalMutation({
         });
         counts.updated++;
       } else {
-        await ctx.db.patch(existing._id, { lastSeenAt: now });
+        await ctx.db.patch("scoutCandidates", existing._id, {
+          lastSeenAt: now,
+        });
         counts.seen++;
       }
     }

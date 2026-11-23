@@ -167,7 +167,9 @@ it("only refreshes lastSeenAt on a candidate a reviewer already decided", async 
   stubFirecrawl(searchBody(event));
   await search();
   const [pending] = await candidates();
-  await t.run((ctx) => ctx.db.patch(pending._id, { reviewStatus: "approved" }));
+  await t.run((ctx) =>
+    ctx.db.patch("scoutCandidates", pending._id, { reviewStatus: "approved" }),
+  );
 
   vi.setSystemTime(new Date("2026-11-02T15:00:00Z"));
   stubFirecrawl(

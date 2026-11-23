@@ -64,6 +64,7 @@ export default defineSchema({
   })
     .index("by_teamId_and_userId", ["teamId", "userId"])
     .index("by_userId", ["userId"]),
+  // Retained for existing data; conversations do not expose legacy requests.
   teamJoinRequests: defineTable({
     teamId: v.id("teams"),
     requesterId: v.id("users"),
@@ -74,4 +75,16 @@ export default defineSchema({
     .index("by_teamId_and_status", ["teamId", "status"])
     .index("by_teamId_and_requesterId", ["teamId", "requesterId"])
     .index("by_requesterId", ["requesterId"]),
+  teamConversations: defineTable({
+    teamId: v.id("teams"),
+    participantId: v.id("users"),
+    updatedAt: v.number(),
+  })
+    .index("by_teamId_and_participantId", ["teamId", "participantId"])
+    .index("by_teamId_and_updatedAt", ["teamId", "updatedAt"]),
+  teamMessages: defineTable({
+    conversationId: v.id("teamConversations"),
+    senderId: v.id("users"),
+    body: v.string(),
+  }).index("by_conversationId", ["conversationId"]),
 });

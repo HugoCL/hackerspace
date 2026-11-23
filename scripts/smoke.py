@@ -149,7 +149,7 @@ def check():
                 expect(page.get_by_role("tab", name="Equipos (2)")).to_have_attribute("aria-selected", "true")
                 teams = page.get_by_role("region", name="Equipos", exact=True)
                 expect(teams.get_by_role("listitem")).to_have_count(2)
-                expect(teams.get_by_role("button", name="Inicia sesión para participar")).to_be_visible()
+                expect(teams.get_by_role("button", name="Inicia sesión para conversar")).to_be_visible()
                 recruiting_filter = teams.get_by_role("checkbox", name="Solo equipos que buscan integrantes")
                 recruiting_filter.click()
                 expect(recruiting_filter).to_be_checked()

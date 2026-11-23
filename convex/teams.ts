@@ -1,6 +1,8 @@
+import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
 import { paginationOptsValidator } from "convex/server";
 import { ConvexError, type Infer, v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import { components } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
   type MutationCtx,
   mutation,
@@ -84,18 +86,17 @@ async function membership(
     .unique();
 }
 
-async function latestRequest(
+async function conversationFor(
   ctx: QueryCtx | MutationCtx,
   teamId: Id<"teams">,
-  requesterId: Id<"users">,
+  participantId: Id<"users">,
 ) {
   return ctx.db
-    .query("teamJoinRequests")
-    .withIndex("by_teamId_and_requesterId", (q) =>
-      q.eq("teamId", teamId).eq("requesterId", requesterId),
+    .query("teamConversations")
+    .withIndex("by_teamId_and_participantId", (q) =>
+      q.eq("teamId", teamId).eq("participantId", participantId),
     )
-    .order("desc")
-    .first();
+    .unique();
 }
 
 export const list = query({
@@ -173,30 +174,15 @@ export const viewerState = query({
     const team = await ctx.db.get("teams", teamId);
     if (!team) return null;
     const user = await findUser(ctx, identity.tokenIdentifier);
-    if (!user) return { kind: "visitor" as const, requestStatus: null };
-    if (team.ownerId === user._id) {
-      const requests = await ctx.db
-        .query("teamJoinRequests")
-        .withIndex("by_teamId_and_status", (q) =>
-          q.eq("teamId", teamId).eq("status", "pending"),
-        )
-        .take(25);
-      return {
-        kind: "owner" as const,
-        requests: await Promise.all(
-          requests.map(async ({ _id, requesterId }) => ({
-            _id,
-            displayName:
-              (await ctx.db.get("users", requesterId))?.displayName ??
-              "Participante",
-          })),
-        ),
-      };
-    }
-    if (await membership(ctx, teamId, user._id))
-      return { kind: "member" as const };
-    const request = await latestRequest(ctx, teamId, user._id);
-    return { kind: "visitor" as const, requestStatus: request?.status ?? null };
+    if (!user) return { kind: "visitor" as const, conversationId: null };
+    const conversation = await conversationFor(ctx, teamId, user._id);
+    const kind =
+      team.ownerId === user._id
+        ? "owner"
+        : (await membership(ctx, teamId, user._id))
+          ? "member"
+          : "visitor";
+    return { kind, conversationId: conversation?._id ?? null };
   },
 });
 
@@ -229,56 +215,199 @@ export const update = mutation({
   },
 });
 
-export const requestToJoin = mutation({
-  args: { teamId: v.id("teams") },
-  handler: async (ctx, { teamId }) => {
+const messageLimits = new RateLimiter(components.rateLimiter, {
+  message: { kind: "token bucket", rate: 20, period: MINUTE, capacity: 8 },
+});
+
+async function viewer(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  return identity ? findUser(ctx, identity.tokenIdentifier) : null;
+}
+
+async function canReadInbox(
+  ctx: QueryCtx | MutationCtx,
+  team: Doc<"teams">,
+  userId: Id<"users">,
+) {
+  return (
+    team.ownerId === userId || Boolean(await membership(ctx, team._id, userId))
+  );
+}
+
+async function conversationAccess(
+  ctx: QueryCtx | MutationCtx,
+  conversationId: Id<"teamConversations">,
+) {
+  const user = await viewer(ctx);
+  const conversation = await ctx.db.get("teamConversations", conversationId);
+  if (!user || !conversation) return null;
+  const team = await ctx.db.get("teams", conversation.teamId);
+  if (
+    !team ||
+    (conversation.participantId !== user._id &&
+      !(await canReadInbox(ctx, team, user._id)))
+  )
+    return null;
+  return { conversation, team, user };
+}
+
+function messageBody(body: string) {
+  const text = body.trim();
+  if (!text || body.length > 1000)
+    throw new ConvexError("Escribe un mensaje de hasta 1000 caracteres.");
+  return text;
+}
+
+async function insertMessage(
+  ctx: MutationCtx,
+  conversationId: Id<"teamConversations">,
+  senderId: Id<"users">,
+  body: string,
+) {
+  if (!(await messageLimits.limit(ctx, "message", { key: senderId })).ok)
+    throw new ConvexError("Espera un momento antes de enviar otro mensaje.");
+  await ctx.db.insert("teamMessages", { conversationId, senderId, body });
+  await ctx.db.patch("teamConversations", conversationId, {
+    updatedAt: Date.now(),
+  });
+}
+
+export const startConversation = mutation({
+  args: { teamId: v.id("teams"), body: v.string() },
+  handler: async (ctx, { teamId, body }) => {
     const identity = await requireIdentity(ctx);
+    const text = messageBody(body);
     const team = await ctx.db.get("teams", teamId);
     if (!team) throw new ConvexError("No encontramos este equipo.");
-    const requesterId = await ensureUser(ctx, identity);
-    if (await membership(ctx, teamId, requesterId))
+    const participantId = await ensureUser(ctx, identity);
+    const existing = await conversationFor(ctx, teamId, participantId);
+    if (existing) {
+      await insertMessage(ctx, existing._id, participantId, text);
+      return existing._id;
+    }
+    if (await canReadInbox(ctx, team, participantId))
       throw new ConvexError("Ya eres parte de este equipo.");
-    const latest = await latestRequest(ctx, teamId, requesterId);
-    if (latest?.status === "pending") return latest._id;
     if (team.recruitingStatus !== "recruiting")
       throw new ConvexError("Este equipo ya no busca integrantes.");
-    return ctx.db.insert("teamJoinRequests", {
+    const conversationId = await ctx.db.insert("teamConversations", {
       teamId,
-      requesterId,
-      status: "pending",
+      participantId,
+      updatedAt: Date.now(),
     });
+    await insertMessage(ctx, conversationId, participantId, text);
+    return conversationId;
   },
 });
 
-export const resolveRequest = mutation({
+export const sendMessage = mutation({
+  args: { conversationId: v.id("teamConversations"), body: v.string() },
+  handler: async (ctx, { conversationId, body }) => {
+    const access = await conversationAccess(ctx, conversationId);
+    if (!access) throw new ConvexError("No tienes acceso a esta conversación.");
+    await insertMessage(
+      ctx,
+      conversationId,
+      access.user._id,
+      messageBody(body),
+    );
+  },
+});
+
+const emptyPage = { page: [], isDone: true, continueCursor: "" };
+
+export const conversations = query({
   args: {
     teamId: v.id("teams"),
-    requestId: v.id("teamJoinRequests"),
-    decision: v.union(v.literal("accepted"), v.literal("rejected")),
+    paginationOpts: paginationOptsValidator,
   },
-  handler: async (ctx, { teamId, requestId, decision }) => {
-    const team = await requireOwnedTeam(ctx, teamId);
-    const request = await ctx.db.get("teamJoinRequests", requestId);
-    if (!request || request.teamId !== teamId)
-      throw new ConvexError("No encontramos esa solicitud.");
-    if (request.status === decision) return;
-    if (request.status !== "pending")
-      throw new ConvexError("Esta solicitud ya se resolvió.");
-    const now = Date.now();
-    if (
-      decision === "accepted" &&
-      !(await membership(ctx, teamId, request.requesterId))
-    ) {
+  handler: async (ctx, { teamId, paginationOpts }) => {
+    const user = await viewer(ctx);
+    const team = await ctx.db.get("teams", teamId);
+    if (!user || !team || !(await canReadInbox(ctx, team, user._id)))
+      return emptyPage;
+    const result = await ctx.db
+      .query("teamConversations")
+      .withIndex("by_teamId_and_updatedAt", (q) => q.eq("teamId", teamId))
+      .order("desc")
+      .paginate(paginationOpts);
+    return {
+      ...result,
+      page: await Promise.all(
+        result.page.map(async ({ _id, participantId }) => ({
+          _id,
+          displayName:
+            (await ctx.db.get("users", participantId))?.displayName ??
+            "Participante",
+        })),
+      ),
+    };
+  },
+});
+
+export const conversation = query({
+  args: { conversationId: v.id("teamConversations") },
+  handler: async (ctx, { conversationId }) => {
+    const access = await conversationAccess(ctx, conversationId);
+    if (!access) return null;
+    const { team, user, conversation } = access;
+    return {
+      displayName:
+        user._id === conversation.participantId
+          ? team.name
+          : ((await ctx.db.get("users", conversation.participantId))
+              ?.displayName ?? "Participante"),
+      canAdd:
+        team.ownerId === user._id &&
+        !(await membership(ctx, team._id, conversation.participantId)),
+    };
+  },
+});
+
+export const messages = query({
+  args: {
+    conversationId: v.id("teamConversations"),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, { conversationId, paginationOpts }) => {
+    const access = await conversationAccess(ctx, conversationId);
+    if (!access) return emptyPage;
+    const result = await ctx.db
+      .query("teamMessages")
+      .withIndex("by_conversationId", (q) =>
+        q.eq("conversationId", conversationId),
+      )
+      .order("desc")
+      .paginate(paginationOpts);
+    return {
+      ...result,
+      page: await Promise.all(
+        result.page.map(async ({ _id, senderId, body }) => ({
+          _id,
+          body,
+          displayName:
+            senderId === access.user._id
+              ? "Tú"
+              : ((await ctx.db.get("users", senderId))?.displayName ??
+                "Participante"),
+        })),
+      ),
+    };
+  },
+});
+
+export const addParticipant = mutation({
+  args: { teamId: v.id("teams"), conversationId: v.id("teamConversations") },
+  handler: async (ctx, { teamId, conversationId }) => {
+    await requireOwnedTeam(ctx, teamId);
+    const conversation = await ctx.db.get("teamConversations", conversationId);
+    if (!conversation || conversation.teamId !== teamId)
+      throw new ConvexError("No encontramos esa conversación.");
+    if (!(await membership(ctx, teamId, conversation.participantId))) {
       await ctx.db.insert("teamMembers", {
         teamId,
-        userId: request.requesterId,
-        joinedAt: now,
+        userId: conversation.participantId,
+        joinedAt: Date.now(),
       });
     }
-    await ctx.db.patch("teamJoinRequests", requestId, {
-      status: decision,
-      decidedAt: now,
-      decidedBy: team.ownerId,
-    });
   },
 });

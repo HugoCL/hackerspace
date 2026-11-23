@@ -51,6 +51,8 @@ it("can reset a local deployment", async () => {
         "teams",
         "teamMembers",
         "teamJoinRequests",
+        "teamConversations",
+        "teamMessages",
       ],
     });
   } finally {

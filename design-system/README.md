@@ -66,9 +66,9 @@ Set lineal de 1.5px en `currentColor` (componente `Icon`: search, pin, calendar,
 
 ## Componentes
 
-42 componentes (cada uno con guía y preview en vivo):
+43 componentes (cada uno con guía y preview en vivo):
 
-- **Layout:** `AppShell`, `PageHeader`, `Section`, `Stack`, `Grid`.
+- **Layout:** `AppShell`, `PageHeader`, `Section`, `Stack`, `Grid`, `Footer`.
 - **Acciones:** `Button`, `Tabs`.
 - **Formularios:** `Input`, `Select`, `Textarea`, `Checkbox`, `RadioGroup`, `Switch`, `SegmentedControl`.
 - **Display:** `Icon`, `Badge`, `Card`, `Avatar`, `AvatarStack`, `EmptyState`, `Separator`, `Skeleton`, `Progress`, `Table`, `Accordion`.
@@ -85,7 +85,7 @@ Los componentes solo pintan: reciben datos ya resueltos (conteos, nombres, fecha
 Toda vista es la misma columna vertebral:
 
 ```
-AppShell (nav · acciones · banner en vivo opcional · aside opcional)
+AppShell (nav · acciones · banner en vivo opcional · aside opcional · Footer)
 └─ PageHeader (eyebrow en vivo · título · meta · acciones)
    └─ Tabs (opcional, para subvistas)
       └─ Section × n (título · count · acción "Ver todos")
@@ -129,6 +129,7 @@ Detalles pequeños que hacen que la interfaz responda. Ya están en `components/
 - **Imágenes con borde.** Fotos de avatar y portadas llevan un contorno interior del 12% de la tinta para no fundirse con el fondo.
 - **Alineación óptica.** Un botón con ícono lleva 2px menos de relleno del lado del ícono.
 - **Radios concéntricos.** Lo que va dentro de una tarjeta (`radius-md`) usa `radius-sm`; nunca el mismo radio anidado.
+- **El nombre muta solo en el pie.** En el `Footer`, "hacker" se transforma en otras palabras ("builders space", "dreamers space"…) y vuelve a juntarse en "hackerspace". Cada palabra entra con una animación propia, acompañada de gráficos que toman parte de ella y cuentan lo que significa. En cualquier otro lugar el nombre está quieto.
 - Todo movimiento se apaga con `prefers-reduced-motion`.
 
 ## Primitivas de UI SDK

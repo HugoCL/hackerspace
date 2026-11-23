@@ -41,3 +41,11 @@ Each Convex deployment trusts only its configured issuer.
 ## 4. Run the Scout (Chile)
 
 The Scout looks for hackathons in Chile with Firecrawl and stores them as pending candidates in `scoutCandidates`; it never publishes. Firecrawl answers anonymous requests with a lower rate limit, so set a key on the target deployment with `npx convex env set FIRECRAWL_API_KEY <key>` (add `--prod` only after a human confirms the production target). Trigger a run with `npx convex run scout:start` (add `--prod` likewise). A run is three searches of 27 to 42 Firecrawl credits each, about 130 credits in all; it logs a failure to the Functions logs and leaves existing data untouched.
+
+Only a reviewer's approval at `/scout` turns a candidate into a public profile. Reviewers are the Convex env var `SCOUT_REVIEWERS`, a comma-separated list of tokenIdentifiers; unset means nobody can review. A Clerk tokenIdentifier is the session token issuer, a `|`, and the Clerk user id: the issuer is the `CLERK_JWT_ISSUER_DOMAIN` value on that deployment (`npx convex env get CLERK_JWT_ISSUER_DOMAIN`), and the user id (`user_…`) is under **Users** in the Clerk Dashboard. Quote the value so the shell keeps the `|`:
+
+```sh
+npx convex env set SCOUT_REVIEWERS 'https://clerk.example.com|user_abc,https://clerk.example.com|user_def'
+```
+
+Add `--prod` only after a human confirms the production target. The **Revisión** link appears in the header for listed accounts once they sign in.

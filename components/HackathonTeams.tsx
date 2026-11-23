@@ -771,7 +771,6 @@ export default function HackathonTeams({
               </div>
               <Collapsible>
                 <CollapsibleTrigger
-                  aria-label={`Descripción de ${team.name}`}
                   className="group flex w-full cursor-pointer items-center justify-between gap-2 text-left text-muted-foreground"
                 >
                   <span className="hs-tcard-pitch line-clamp-1! group-data-open:hidden!">
@@ -797,10 +796,12 @@ export default function HackathonTeams({
                 </div>
               )}
               <div className="hs-tcard-foot items-center!">
-                <span className="hs-tcard-sub tabular-nums">
-                  {team.memberCount > 1000 ? "1000+" : team.memberCount}{" "}
-                  {team.memberCount === 1 ? "integrante" : "integrantes"}
-                </span>
+                {team.memberCount !== null && (
+                  <span className="hs-tcard-sub tabular-nums">
+                    {team.memberCount > 1000 ? "1000+" : team.memberCount}{" "}
+                    {team.memberCount === 1 ? "integrante" : "integrantes"}
+                  </span>
+                )}
                 <span className="hs-badge hs-badge--neutral">
                   {team.recruitingStatus === "recruiting"
                     ? "Busca integrantes"

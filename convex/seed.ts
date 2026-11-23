@@ -48,6 +48,7 @@ export const seeders: Record<TableNames, Seeder> = {
       const teamId = await ctx.db.insert("teams", {
         hackathonId: hackathon._id,
         ownerId,
+        memberCount: 1,
         name,
         description,
         lookingFor,

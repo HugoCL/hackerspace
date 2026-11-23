@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import migrations from "@convex-dev/migrations/test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { expect, it } from "vitest";
@@ -241,6 +242,46 @@ it("keeps messages private and lets only the owner add a member exactly once", a
       .collect(),
   );
   expect(members).toHaveLength(2);
+});
+
+it("backfills the membership count, including members added while it was absent", async () => {
+  const { t, owner, applicant, outsider, hackathonId } = await setup();
+  migrations.register(t);
+  const teamId = await owner.mutation(api.teams.create, {
+    hackathonId,
+    ...details,
+  });
+  await t.run((ctx) =>
+    ctx.db.patch("teams", teamId, { memberCount: undefined }),
+  );
+  const listArgs = {
+    hackathonId,
+    recruitingOnly: false,
+    paginationOpts: { numItems: 10, cursor: null },
+  };
+  const counts = async () =>
+    (await t.query(api.teams.list, listArgs)).page.map(
+      (team) => team.memberCount,
+    );
+  const join = async (participant: typeof applicant) => {
+    const conversationId = await participant.mutation(
+      api.teams.startConversation,
+      {
+        teamId,
+        body: "Hola equipo",
+      },
+    );
+    await owner.mutation(api.teams.addParticipant, { teamId, conversationId });
+  };
+
+  await join(applicant);
+  expect(await counts()).toEqual([null]);
+  await t.mutation(internal.migrations.backfillTeamMemberCount, {
+    batchSize: 10,
+  });
+  expect(await counts()).toEqual([2]);
+  await join(outsider);
+  expect(await counts()).toEqual([3]);
 });
 
 it("validates message length and limits messages per sender across teams", async () => {

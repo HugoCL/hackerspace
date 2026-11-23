@@ -1,25 +1,55 @@
-"use client";
-
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import Catalog from "@/components/HackathonCatalog";
+import { AppShell } from "@/components/hackathon-ui";
+import { sampleEvents } from "./hackathons/sample-events";
 
 export default function Home() {
-  const status = useQuery(api.health.status, {});
-
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-4 px-6 py-12 text-pretty">
-      <h1 className="text-4xl font-bold text-balance">Hackerspace</h1>
-      <p className="text-lg">
-        Descubre hackathones presenciales y virtuales, forma equipo y comparte
-        lo que construyes.
-      </p>
-      <p className="text-muted-foreground">
-        Estamos preparando un espacio para encontrarte con otras personas en
-        vivo.
-      </p>
-      <p aria-live="polite" className="sr-only" data-testid="connection-status">
-        {status === "ok" ? "Conexión activa" : "Conectando…"}
-      </p>
-    </main>
+    <AppShell exploring>
+      <section className="prototype-hero">
+        <div className="hs-pagehead-text">
+          <h1 className="hs-pagehead-title">Hackathones cerca de ti</h1>
+          <p className="hs-pagehead-desc">
+            Encuentra el lugar y la fecha para tu próxima hackathon, cerca de ti
+            o en línea.
+          </p>
+        </div>
+        <svg
+          aria-hidden="true"
+          className="prototype-room"
+          viewBox="0 0 360 160"
+        >
+          <rect
+            fill="var(--hs-signal)"
+            height="152"
+            rx="8"
+            width="104"
+            x="24"
+          />
+          <rect
+            fill="var(--ui-foreground)"
+            height="128"
+            rx="8"
+            width="192"
+            x="144"
+            y="24"
+          />
+          {[48, 72, 96].map((x) => (
+            <circle cx={x} cy="128" fill="var(--hs-signal-ink)" key={x} r="6" />
+          ))}
+          {[48, 74, 100, 126].flatMap((y) =>
+            [174, 200, 226, 252, 278, 304].map((x) => (
+              <circle
+                cx={x}
+                cy={y}
+                fill="var(--ui-background)"
+                key={`${x}:${y}`}
+                r="6"
+              />
+            )),
+          )}
+        </svg>
+      </section>
+      <Catalog events={sampleEvents} />
+    </AppShell>
   );
 }

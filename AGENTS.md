@@ -45,7 +45,7 @@ Convex conventions (details in the file headers):
 - Destructive schema change or backfill: write a migration in `convex/migrations.ts`, add it to `runAll`, run `pnpm migrate`.
 - Components: `@convex-dev/migrations`, `@convex-dev/rate-limiter`, `@convex-dev/presence`, and `@convex-dev/workpool` mounted as `backgroundWork` (see `convex/jobs.ts`).
 
-Smoke checks the home page's `h1` ("Hackerspace") and waits for the browser's Convex health query to resolve. Update `check()` in `scripts/smoke.py` in the same PR if the home page changes these conditions.
+Smoke checks the home page's `h1` ("Hackathones cerca de ti"), waits for the browser's Convex health query to resolve, and opens a sample hackathon from the catalog. Update `check()` in `scripts/smoke.py` in the same PR if these conditions change.
 
 ## Local dev with no accounts
 

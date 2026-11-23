@@ -1,6 +1,6 @@
 # 07: Descubrir candidatos con Firecrawl
 
-Status: open
+Status: closed (PR #12)
 Checkpoint: 4. Scout
 Bloqueado por: [02](02-browse-hackathons.md).
 

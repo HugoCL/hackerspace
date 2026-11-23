@@ -18,8 +18,8 @@
 // or from .env.local, and CONVEX_AGENT_MODE is removed. Cloud mode refuses to start when the key
 // or CONVEX_DEPLOYMENT targets production (`prod:` prefix, or a legacy key with no prefix),
 // because this script pushes and seeds.
-// Before starting, a one-shot push seeds empty tables. On anonymous local and personal dev
-// deployments it also completes pending migrations before serving the app. Set DEV_SEED=0
+// Before starting, a one-shot push seeds empty tables. Only anonymous local deployments
+// also complete pending migrations before serving the app. Set DEV_SEED=0
 // to skip preparation. Both pushes share the same deployment selectors.
 // Extra arguments are forwarded to `convex dev` only. They can change the target (--url,
 // --configure, --env-file), so when any are given the seed step is skipped.
@@ -143,6 +143,11 @@ console.log(
     ? `dev: local anonymous Convex deployment, no login (${mode.why})`
     : `dev: Convex deployment from your account, anonymous mode off (${mode.why})`,
 );
+if (!mode.anonymous) {
+  console.log(
+    "dev: Corre `pnpm migrate` si hay migraciones pendientes en tu entorno dev.",
+  );
+}
 
 let child = null;
 let stopping = false;
@@ -198,9 +203,7 @@ const extraArgs = process.argv.slice(2);
 if (process.env.DEV_SEED !== "0" && extraArgs.length > 0) {
   console.log("dev: extra arguments given, skipping the seed step");
 } else if (process.env.DEV_SEED !== "0") {
-  const migrate =
-    mode.anonymous || (mode.key?.value ?? mode.deployment)?.startsWith("dev:");
-  const prepare = migrate ? "migrations:prepareDev" : "seed:ensure";
+  const prepare = mode.anonymous ? "migrations:prepareDev" : "seed:ensure";
   console.log(`dev: preparing data (${prepare})`);
   const result = await convex(["dev", "--once", "--run", prepare]);
   if (stopping) process.exit(exitCode(result));

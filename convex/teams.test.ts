@@ -2,7 +2,7 @@
 import migrations from "@convex-dev/migrations/test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
 
@@ -276,7 +276,17 @@ it("backfills the membership count, including members added while it was absent"
 
   await join(applicant);
   expect(await counts()).toEqual([null]);
-  await t.action(internal.migrations.prepareDev, {});
+  try {
+    vi.stubEnv("CONVEX_CLOUD_URL", "https://example.convex.cloud");
+    await expect(t.action(internal.migrations.prepareDev, {})).rejects.toThrow(
+      "require a local",
+    );
+    expect(await counts()).toEqual([null]);
+    vi.stubEnv("CONVEX_CLOUD_URL", "http://127.0.0.1:3210");
+    await t.action(internal.migrations.prepareDev, {});
+  } finally {
+    vi.unstubAllEnvs();
+  }
   expect(await counts()).toEqual([2]);
   await join(outsider);
   expect(await counts()).toEqual([3]);

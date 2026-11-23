@@ -2,6 +2,7 @@ import { Migrations } from "@convex-dev/migrations";
 import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { internalAction, internalMutation } from "./_generated/server";
+import { isLocalDeployment } from "./seed";
 import { legacyLookingFor, teamSearchText } from "./teamText";
 
 // Use this file for every destructive schema change and every backfill:
@@ -71,6 +72,11 @@ export const runAll = internalMutation({
 export const prepareDev = internalAction({
   args: {},
   handler: async (ctx) => {
+    if (!isLocalDeployment()) {
+      throw new Error(
+        "Automatic migrations require a local Convex deployment.",
+      );
+    }
     await ctx.runMutation(internal.seed.ensure, {});
     await ctx.runMutation(internal.migrations.runAll, {});
     const deadline = Date.now() + 30_000;

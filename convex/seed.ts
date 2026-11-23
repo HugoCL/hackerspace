@@ -95,7 +95,7 @@ export const ensure = internalMutation({
 });
 
 // Local deployments (`convex dev` anonymous or local) serve from the loopback address.
-function isLocalDeployment() {
+export function isLocalDeployment() {
   const url = process.env.CONVEX_CLOUD_URL;
   if (!url) return false;
   try {

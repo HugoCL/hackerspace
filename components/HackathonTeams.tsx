@@ -28,14 +28,15 @@ import {
   useState,
 } from "react";
 import { api } from "@/convex/_generated/api";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { Id } from "@/convex/_generated/dataModel";
+import { lookingForLimit } from "@/convex/teamText";
 import { Icon } from "./hackathon-ui";
 
 type TeamDetails = Pick<
-  Doc<"teams">,
-  "name" | "description" | "rolesWanted" | "recruitingStatus"
+  Team,
+  "name" | "description" | "lookingFor" | "recruitingStatus"
 >;
-type Team = TeamDetails & { _id: Id<"teams"> };
+type Team = (typeof api.teams.list)["_returnType"]["page"][number];
 
 function useTeamAction() {
   const [pending, setPending] = useState(false);
@@ -69,6 +70,7 @@ function TeamForm({
 }) {
   const { pending, error, run } = useTeamAction();
   const fieldId = useId();
+  const [lookingFor, setLookingFor] = useState(team?.lookingFor ?? "");
   const [recruiting, setRecruiting] = useState(
     team?.recruitingStatus !== "closed",
   );
@@ -79,7 +81,7 @@ function TeamForm({
       await onSave({
         name: String(data.get("name") ?? ""),
         description: String(data.get("description") ?? ""),
-        rolesWanted: String(data.get("roles") ?? "").split(","),
+        lookingFor,
         recruitingStatus: recruiting ? "recruiting" : "closed",
       });
       onCancel();
@@ -88,13 +90,13 @@ function TeamForm({
   return (
     <form
       aria-label={team ? "Editar equipo" : "Crear equipo"}
-      className="grid gap-3"
+      className="hs-card grid! gap-3!"
       onSubmit={submit}
     >
       <label className="grid gap-1 text-sm" htmlFor={`${fieldId}-name`}>
         Nombre del equipo
         <Input
-          className="hs-input"
+          className="hs-input-control"
           defaultValue={team?.name}
           id={`${fieldId}-name`}
           maxLength={70}
@@ -114,15 +116,26 @@ function TeamForm({
           rows={3}
         />
       </label>
-      <label className="grid gap-1 text-sm" htmlFor={`${fieldId}-roles`}>
-        Roles que buscan, separados por comas
-        <Input
-          className="hs-input"
-          defaultValue={team?.rolesWanted.join(", ")}
-          id={`${fieldId}-roles`}
-          name="roles"
+      <div className="grid gap-1 text-sm">
+        <label htmlFor={`${fieldId}-looking-for`}>Qué buscan</label>
+        <Textarea
+          aria-describedby={`${fieldId}-looking-for-count`}
+          className="hs-input-control hs-textarea"
+          id={`${fieldId}-looking-for`}
+          maxLength={lookingForLimit}
+          name="lookingFor"
+          onValueChange={setLookingFor}
+          placeholder="Por ejemplo: alguien que se anime a entrevistar a usuarios."
+          rows={2}
+          value={lookingFor}
         />
-      </label>
+        <p
+          className="text-right text-xs text-muted-foreground"
+          id={`${fieldId}-looking-for-count`}
+        >
+          {lookingFor.length} / {lookingForLimit} caracteres
+        </p>
+      </div>
       <label className="hs-check" htmlFor={`${fieldId}-recruiting`}>
         <Checkbox
           className="hs-check-input data-checked:border-primary! data-checked:bg-primary!"
@@ -566,13 +579,21 @@ function TeamInbox({ team }: { team: Team }) {
 function ConversationDialog({
   children,
   label,
+  primary = false,
 }: {
   children: React.ReactNode;
   label: string;
+  primary?: boolean;
 }) {
   return (
     <Dialog>
-      <DialogTrigger className="hs-btn hs-btn--secondary justify-self-start">
+      <DialogTrigger
+        className={
+          primary
+            ? "hs-btn hs-btn--primary"
+            : "hs-btn hs-btn--secondary hs-btn--sm"
+        }
+      >
         {label}
       </DialogTrigger>
       <DialogBackdrop className="bg-foreground/55!" />
@@ -588,37 +609,50 @@ function TeamActions({ team }: { team: Team }) {
   const update = useMutation(api.teams.update);
   const [editing, setEditing] = useState(false);
   if (!state) return null;
+  const count = state.conversationCount;
   return (
-    <div className="grid gap-2">
-      {state.kind === "owner" &&
-        (editing ? (
-          <TeamForm
-            team={team}
-            onSave={(details) => update({ teamId: team._id, ...details })}
-            onCancel={() => setEditing(false)}
-          />
-        ) : (
+    <>
+      {state.kind === "member" && (
+        <p className="hs-tcard-sub" role="status">
+          Ya eres parte del equipo
+        </p>
+      )}
+      <div className="flex items-center gap-2">
+        {state.kind !== "visitor" && (
+          <ConversationDialog
+            label={
+              count === null
+                ? "Conversaciones"
+                : `Conversaciones (${count > 1000 ? "1000+" : count})`
+            }
+          >
+            <TeamInbox team={team} />
+          </ConversationDialog>
+        )}
+        {state.kind === "owner" && !editing && (
           <Button
-            className="hs-btn hs-btn--secondary justify-self-start"
+            className="hs-btn hs-btn--secondary hs-btn--sm"
             onClick={() => setEditing(true)}
           >
-            Editar equipo
+            Editar
           </Button>
-        ))}
-      {state.kind === "member" && <p role="status">Ya eres parte del equipo</p>}
-      {state.kind !== "visitor" && (
-        <ConversationDialog label="Conversaciones">
-          <TeamInbox team={team} />
-        </ConversationDialog>
+        )}
+        {(state.conversationId ||
+          (state.kind === "visitor" &&
+            team.recruitingStatus === "recruiting")) && (
+          <ConversationDialog label="Conversar" primary>
+            <TeamConversation initialId={state.conversationId} team={team} />
+          </ConversationDialog>
+        )}
+      </div>
+      {state.kind === "owner" && editing && (
+        <TeamForm
+          team={team}
+          onSave={(details) => update({ teamId: team._id, ...details })}
+          onCancel={() => setEditing(false)}
+        />
       )}
-      {(state.conversationId ||
-        (state.kind === "visitor" &&
-          team.recruitingStatus === "recruiting")) && (
-        <ConversationDialog label="Conversar">
-          <TeamConversation initialId={state.conversationId} team={team} />
-        </ConversationDialog>
-      )}
-    </div>
+    </>
   );
 }
 
@@ -629,13 +663,13 @@ export default function HackathonTeams({
 }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const [recruitingOnly, setRecruitingOnly] = useState(false);
-  const [role, setRole] = useState("");
+  const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
   const filterId = useId();
   const create = useMutation(api.teams.create);
   const { results, status, loadMore } = usePaginatedQuery(
     api.teams.list,
-    { hackathonId, recruitingOnly, role: role.trim() || undefined },
+    { hackathonId, recruitingOnly, search: search.trim() || undefined },
     { initialNumItems: 10 },
   );
 
@@ -645,14 +679,15 @@ export default function HackathonTeams({
         Equipos
       </h2>
       <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-        <label className="grid gap-1 text-sm" htmlFor={`${filterId}-role`}>
-          Filtrar por rol
+        <label className="grid gap-1 text-sm" htmlFor={`${filterId}-search`}>
+          Buscar equipos
           <Input
             className="hs-input-control"
-            id={`${filterId}-role`}
-            maxLength={40}
-            value={role}
-            onChange={(event) => setRole(event.currentTarget.value)}
+            id={`${filterId}-search`}
+            maxLength={lookingForLimit}
+            placeholder="Nombre o qué buscan"
+            value={search}
+            onValueChange={setSearch}
           />
         </label>
         <label className="hs-check min-h-8 items-center!" htmlFor={filterId}>
@@ -699,8 +734,8 @@ export default function HackathonTeams({
       ) : results.length === 0 ? (
         <div className="hs-empty" role="status">
           <p className="hs-empty-title">
-            {role.trim()
-              ? "No encontramos equipos para ese rol."
+            {search.trim()
+              ? "No encontramos equipos para esa búsqueda."
               : recruitingOnly
                 ? "No hay equipos buscando integrantes."
                 : "Aún no hay equipos en esta hackathon."}
@@ -712,26 +747,35 @@ export default function HackathonTeams({
           aria-label="Equipos de la hackathon"
         >
           {results.map((team) => (
-            <li className="hs-card hs-tcard" key={team._id}>
-              <h3 className="hs-tcard-title">{team.name}</h3>
-              <p className="hs-tcard-pitch line-clamp-none!">
+            <li className="hs-card hs-tcard min-w-0" key={team._id}>
+              <div className="hs-tcard-head">
+                <h3 className="hs-tcard-title wrap-anywhere">{team.name}</h3>
+              </div>
+              <p
+                className="hs-tcard-pitch line-clamp-1!"
+                title={team.description}
+              >
                 {team.description}
               </p>
-              <span className="hs-badge hs-badge--neutral self-start">
-                {team.recruitingStatus === "recruiting"
-                  ? "Busca integrantes"
-                  : "No busca integrantes"}
-              </span>
-              {team.rolesWanted.length > 0 && (
-                <div className="hs-tcard-looking">
-                  <span className="hs-tcard-looking-label">Roles</span>
-                  {team.rolesWanted.map((role) => (
-                    <span className="hs-badge hs-badge--signal" key={role}>
-                      {role}
-                    </span>
-                  ))}
+              {team.lookingFor && (
+                <div className="hs-tcard-looking block! rounded border border-border bg-muted px-2.5 py-2 text-sm wrap-anywhere">
+                  <p className="hs-tcard-looking-label font-medium">
+                    Qué buscan
+                  </p>
+                  <p className="whitespace-pre-line">{team.lookingFor}</p>
                 </div>
               )}
+              <div className="hs-tcard-foot items-center!">
+                <span className="hs-tcard-sub tabular-nums">
+                  {team.memberCount > 1000 ? "1000+" : team.memberCount}{" "}
+                  {team.memberCount === 1 ? "integrante" : "integrantes"}
+                </span>
+                <span className="hs-badge hs-badge--neutral">
+                  {team.recruitingStatus === "recruiting"
+                    ? "Busca integrantes"
+                    : "No busca integrantes"}
+                </span>
+              </div>
               {isAuthenticated && <TeamActions team={team} />}
             </li>
           ))}

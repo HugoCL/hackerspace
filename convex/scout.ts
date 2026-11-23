@@ -18,8 +18,12 @@ import {
 
 // The Scout only covers Chile for now. The query asks Firecrawl for Chilean results and
 // scoutExtraction rejects anything whose page says another country.
+// Search results skew to past editions; naming the year brings up the upcoming ones.
+const chileQueries = (year: number) => [
+  `hackatón Chile ${year}`,
+  `hackathon Chile ${year + 1}`,
+];
 const CHILE_SEARCH = {
-  queries: ["hackathon Chile", "hackatón Chile"],
   country: "CL",
   location: "Chile",
   limit: 10,
@@ -36,10 +40,11 @@ const observation = v.object({
 export const start = internalMutation({
   args: {},
   handler: async (ctx) => {
-    for (const query of CHILE_SEARCH.queries) {
+    const queries = chileQueries(Number(todayInChile(Date.now()).slice(0, 4)));
+    for (const query of queries) {
       await pool.enqueueAction(ctx, internal.scout.search, { query });
     }
-    return CHILE_SEARCH.queries.length;
+    return queries.length;
   },
 });
 
@@ -150,7 +155,7 @@ export const record = internalMutation({
         await ctx.db.patch("scoutCandidates", existing._id, {
           proposal,
           provenance,
-          discoveredFromUrl,
+          discoveredFromUrl: discoveredFromUrl ?? existing.discoveredFromUrl,
           lastSeenAt: now,
         });
         counts.updated++;

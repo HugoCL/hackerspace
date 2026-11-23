@@ -19,6 +19,11 @@ const MIN_EVIDENCE = 12;
 
 const httpUrl = z.url({ protocol: /^https?$/ }).max(2048);
 const text = (max: number) => z.string().trim().min(1).max(max);
+// The extractor sometimes answers with a timestamp; the calendar day is what we keep.
+const day = z
+  .string()
+  .transform((value) => value.slice(0, 10))
+  .pipe(z.iso.date());
 // A bad optional field is dropped; the rest of the result is still usable.
 const optional = <T extends z.ZodType>(schema: T) =>
   schema
@@ -32,21 +37,21 @@ const extraction = z.object({
   officialUrl: optional(httpUrl),
   organizer: optional(text(200)),
   modality: optional(z.enum(["inPerson", "hybrid", "virtual"])),
-  startDate: optional(z.iso.date()),
-  endDate: optional(z.iso.date()),
+  startDate: optional(day),
+  endDate: optional(day),
   city: optional(text(100)),
   country: optional(text(100)),
   summary: optional(text(600)),
   topics: optional(z.array(text(60)).max(10)),
-  guidelines: optional(text(8000)),
-  rules: optional(text(8000)),
-  // Verbatim quotes from the page, keyed by the extraction field they support.
+  // Verbatim quotes from the page, keyed by the extraction field they support. Guidelines and
+  // rules exist only here, so their stored text is always a passage the page contains.
   evidence: optional(z.record(z.string(), z.string())),
 });
 
 const searchResult = z.object({
   url: httpUrl,
   markdown: optional(z.string()),
+  metadata: optional(z.object({ url: optional(httpUrl) })),
   json: z.unknown(),
 });
 
@@ -57,7 +62,7 @@ const searchResponse = z.object({
 
 // The extraction request sent to Firecrawl. `evidence` and the field names must match `extraction`.
 export const extractionPrompt =
-  "Extract this hackathon's details. Use only what the page states; omit any field the page does not state and never guess. Dates are YYYY-MM-DD. For startDate, endDate, city, organizer, guidelines and rules, also put a short quote copied verbatim from the page into evidence under the same key.";
+  "Set isHackathon to true only if the page is about one specific hackathon event, not a list of events, a news roundup or a video. Extract its details. Use only what the page states; omit any field the page does not state, never guess and never write placeholders such as N/A. Dates are YYYY-MM-DD. For startDate, endDate, city and organizer, also put a short quote copied verbatim from the page into evidence under the same key. Put the participation guidelines and the rules, copied verbatim from the page, into evidence.guidelines and evidence.rules.";
 
 const string = { type: "string" } as const;
 export const extractionSchema = {
@@ -74,8 +79,6 @@ export const extractionSchema = {
     country: string,
     summary: string,
     topics: { type: "array", items: string },
-    guidelines: string,
-    rules: string,
     evidence: {
       type: "object",
       properties: {
@@ -124,12 +127,12 @@ const isChile = (country: string | undefined) =>
   );
 
 // The extractor must back a field with a quote that really appears on the page.
-function excerptFinder(quotes: Record<string, string>, markdown: string) {
+function quoteFinder(quotes: Record<string, string>, markdown: string) {
   const page = fold(markdown);
   return (key: string): string | undefined => {
     const quote = squash(quotes[key] ?? "");
     return fold(quote).length >= MIN_EVIDENCE && page.includes(fold(quote))
-      ? quote.slice(0, MAX_EXCERPT)
+      ? quote
       : undefined;
   };
 }
@@ -143,12 +146,11 @@ export function observationFromResult(
   if (!result.success || !result.data.json) return null;
   const found = extraction.safeParse(result.data.json);
   if (!found.success || !isChile(found.data.country)) return null;
-  const { url: sourceUrl, markdown } = result.data;
+  const { url: searchUrl, markdown, metadata } = result.data;
+  const sourceUrl = metadata?.url ?? searchUrl;
   const data = found.data;
 
-  const excerptFor = excerptFinder(data.evidence ?? {}, markdown ?? "");
-  const guidelinesExcerpt = excerptFor("guidelines");
-  const rulesExcerpt = excerptFor("rules");
+  const quoteFor = quoteFinder(data.evidence ?? {}, markdown ?? "");
   const proposal: ScoutProposal = {
     title: data.title,
     officialUrl: data.officialUrl ?? sourceUrl,
@@ -159,8 +161,8 @@ export function observationFromResult(
     location: data.city,
     summary: data.summary,
     topics: data.topics,
-    guidelines: guidelinesExcerpt ? data.guidelines : undefined,
-    rules: rulesExcerpt ? data.rules : undefined,
+    guidelines: quoteFor("guidelines")?.slice(0, 8000),
+    rules: quoteFor("rules")?.slice(0, 8000),
   };
   if ((proposal.endsOn ?? proposal.startsOn ?? today) < today) return null;
 
@@ -175,16 +177,19 @@ export function observationFromResult(
       field,
       sourceUrl,
       retrievedAt,
-      evidenceExcerpt: excerptFor(evidenceKey[field] ?? field),
+      evidenceExcerpt: quoteFor(evidenceKey[field] ?? field)?.slice(
+        0,
+        MAX_EXCERPT,
+      ),
     }));
 
   return {
     proposal,
     provenance,
     discoveredFromUrl:
-      normalizeUrl(proposal.officialUrl) === normalizeUrl(sourceUrl)
+      normalizeUrl(proposal.officialUrl) === normalizeUrl(searchUrl)
         ? undefined
-        : sourceUrl,
+        : searchUrl,
   };
 }
 

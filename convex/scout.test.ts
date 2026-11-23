@@ -144,6 +144,45 @@ it("records where an event was found when that differs from its official URL", a
   ).toBe(true);
 });
 
+it("stores the page's own rules passage, not the extractor's wording", async () => {
+  const { search, candidates } = setup();
+  stubFirecrawl(
+    searchBody(
+      withJson({
+        rules: "Se prohíbe usar IA generativa.",
+        evidence: { rules: extracted.rules },
+      }),
+    ),
+  );
+
+  await search();
+
+  const [candidate] = await candidates();
+  expect(candidate.proposal.rules).toBe(extracted.rules);
+});
+
+it("cites the page Firecrawl scraped after a redirect and keeps the search link", async () => {
+  const { search, candidates } = setup();
+  const searchUrl = "https://bit.ly/space-apps-santiago";
+  stubFirecrawl(
+    searchBody({
+      ...event,
+      url: searchUrl,
+      metadata: { ...event.metadata, url: officialUrl },
+    }),
+  );
+  await search();
+  stubFirecrawl(searchBody(event));
+  await search();
+
+  const [candidate] = await candidates();
+  expect(candidate.proposal.officialUrl).toBe(officialUrl);
+  expect(candidate.discoveredFromUrl).toBe(searchUrl);
+  expect(
+    candidate.provenance.every((entry) => entry.sourceUrl === officialUrl),
+  ).toBe(true);
+});
+
 it("updates a pending candidate on a new observation instead of duplicating it", async () => {
   const { search, candidates } = setup();
   stubFirecrawl(searchBody(event));
@@ -259,6 +298,10 @@ it.each([
   [
     "an event that already ended",
     { startDate: "2026-10-01", endDate: "2026-10-02" },
+  ],
+  [
+    "an ended event dated with timestamps",
+    { startDate: "2026-10-01T08:30:00", endDate: "2026-10-02T18:30:00" },
   ],
 ])("drops results with %s", async (_name, patch) => {
   const { search, candidates } = setup();

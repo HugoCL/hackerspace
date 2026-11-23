@@ -1,0 +1,17 @@
+<!-- @dsCard group="Forms" height=170 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>RadioGroup</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.RadioGroup,{label:'¿Cómo quieres participar?',defaultValue:'team',options:[
+    {value:'team',label:'Busco equipo',hint:'Apareces en la lista de personas disponibles.'},
+    {value:'solo',label:'Ya tengo equipo'},
+    {value:'mentor',label:'Voy como mentor'}]}));
+</script>
+</body>
+</html>

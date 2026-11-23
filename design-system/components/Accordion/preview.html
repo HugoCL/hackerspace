@@ -1,0 +1,17 @@
+<!-- @dsCard group="Display" height=240 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Accordion</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h('div',{style:{maxWidth:560}}, h(H.Accordion,{items:[
+    {title:'¿Quién puede participar?',content:'Estudiantes y profesionales mayores de 18 años. No necesitas experiencia previa en hackathones.',defaultOpen:true},
+    {title:'¿De cuántas personas son los equipos?',content:'De 2 a 4 personas. Si llegas sin equipo, puedes armar uno aquí antes del evento.'},
+    {title:'¿Puedo usar código que ya tenía?',content:'Sí, si lo declaras al entregar. El jurado evalúa lo construido durante el evento.'}]})));
+</script>
+</body>
+</html>

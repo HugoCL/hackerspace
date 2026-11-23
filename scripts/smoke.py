@@ -113,6 +113,18 @@ def check():
                 expect(
                     page.get_by_role("heading", name="Código sin Fronteras", level=1)
                 ).to_be_visible()
+                sidebar = page.get_by_role("complementary")
+                expect(sidebar.get_by_role("region", name="Datos del evento")).to_contain_text(
+                    "En línea"
+                )
+                expect(sidebar.get_by_role("region", name="Viendo ahora")).to_contain_text(
+                    "Simulación"
+                )
+                expect(
+                    sidebar.get_by_role("region", name="Equipos buscando gente").get_by_role(
+                        "listitem"
+                    )
+                ).to_have_count(2)
                 page.get_by_role("link", name="Ver bases", exact=True).click()
                 expect(page).to_have_url(f"{URL}/hackathones/codigo-sin-fronteras#bases")
             finally:

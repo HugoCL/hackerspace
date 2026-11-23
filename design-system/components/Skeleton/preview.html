@@ -1,0 +1,16 @@
+<!-- @dsCard group="Display" height=150 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Skeleton</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Card,{style:{maxWidth:340},'aria-busy':true},
+    h(H.Stack,{direction:'row',gap:2,align:'center'}, h(H.Skeleton,{variant:'circle'}), h('div',{style:{flex:1}}, h(H.Skeleton,{width:'60%'}), h(H.Skeleton,{width:'35%'}))),
+    h(H.Skeleton,null), h(H.Skeleton,{width:'80%'})));
+</script>
+</body>
+</html>

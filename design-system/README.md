@@ -11,7 +11,7 @@ Hackerspace se tiene que sentir como entrar a una sala llena: ves quién más es
 1. **Lo vivo es naranja, y solo lo vivo.** `hs-live` marca presencia y actividad en tiempo real (punto de presencia, "23 viendo", alguien se unió a un equipo). Si no está pasando ahora, no es naranja.
 2. **Lo redondo es una persona.** `radius-full` solo para avatares, puntos de presencia y la píldora de presencia. Todo lo demás usa `radius-sm` (controles) o `radius-md` (tarjetas).
 3. **Humano vs. agente, siempre visible.** Todo lo que crea o hace un agente IA (el scout de hackathones con Firecrawl, el agente de un usuario vía API) lleva la etiqueta `hs-agent` en monoespaciada con borde punteado: "agente scout". Nunca se disfraza de persona.
-4. **Bordes, no sombras.** Las tarjetas (`hs-surface`) se separan del fondo con `ui-border`. Sin gradientes.
+4. **Bordes, no sombras.** Las tarjetas (`hs-surface`) se separan del fondo con `ui-border`. Sin gradientes. La única sombra, `shadow-overlay`, es para lo que flota sobre la página: Dialog, Drawer, Menu, Popover y Toast.
 5. **Una acción primaria por vista** en `ui-primary` (bloque de tinta). La lima `hs-signal` se reserva para el único llamado que más importa (p. ej. "Abierto a equipo").
 
 ## Voz y contenido
@@ -62,15 +62,19 @@ Rejilla de 4px (`space-1` = `--ui-spacing`). Tarjetas con `space-4` de padding y
 
 ## Iconografía
 
-Set lineal de 1.5px en `currentColor` (componente `Icon`: search, pin, calendar, users, heart, plus, bell, bot, trophy, globe, arrow, menu, code). 16px en controles, 14px en metadatos, 20–28px en estados vacíos. Para ampliar, Lucide con el mismo trazo. `pin` = presencial, `globe` = virtual, `bot` = agente. El único ícono relleno es el punto en vivo.
+Set lineal de 1.5px en `currentColor` (componente `Icon`: search, pin, calendar, users, heart, plus, bell, bot, trophy, globe, arrow, menu, code, check, x, chevron, info, alert, more). 16px en controles, 14px en metadatos, 20–28px en estados vacíos. Para ampliar, Lucide con el mismo trazo. `pin` = presencial, `globe` = virtual, `bot` = agente. El único ícono relleno es el punto en vivo.
 
 ## Componentes
 
-23 componentes en cuatro grupos (cada uno con guía y preview en vivo):
+42 componentes (cada uno con guía y preview en vivo):
 
 - **Layout:** `AppShell`, `PageHeader`, `Section`, `Stack`, `Grid`.
-- **Acciones y formularios:** `Button`, `Tabs`, `Input`, `Select`.
-- **Display:** `Icon`, `Badge`, `Card`, `Avatar`, `AvatarStack`, `EmptyState`.
+- **Acciones:** `Button`, `Tabs`.
+- **Formularios:** `Input`, `Select`, `Textarea`, `Checkbox`, `RadioGroup`, `Switch`, `SegmentedControl`.
+- **Display:** `Icon`, `Badge`, `Card`, `Avatar`, `AvatarStack`, `EmptyState`, `Separator`, `Skeleton`, `Progress`, `Table`, `Accordion`.
+- **Feedback:** `Alert`, `Toaster` (con `toast()`), `Tooltip`.
+- **Navegación:** `Breadcrumb`, `Pagination`.
+- **Superpuestos:** `Dialog`, `Drawer`, `Menu`, `Popover`.
 - **En vivo:** `PresencePill`, `Countdown`, `AgentTag`, `ActivityFeed`, `TeamSlots`.
 - **Tarjetas de dominio:** `HackathonCard`, `TeamCard`, `ProjectCard`.
 
@@ -137,9 +141,31 @@ Los componentes de este sistema son la referencia visual. En la app, el comporta
 | `Tabs` | `@ui-sdk/react/tabs` (`TabsList` → `hs-tabs`, `TabsTab` → `hs-tab`; el estado llega por `data-selected`) |
 | `Input` | `@ui-sdk/react/field` + `@ui-sdk/react/input` (`hs-field`, `hs-input-control`) |
 | `Select` | `@ui-sdk/react/select` |
+| `Textarea` | `@ui-sdk/react/field` + `@ui-sdk/react/textarea` |
+| `Checkbox`, `RadioGroup`, `Switch` | `checkbox`, `radio`, `switch` (`hs-check`, `hs-check-input`, `hs-radio-input`, `hs-switch-input`) |
+| `SegmentedControl` | `@ui-sdk/react/segmented-control` |
 | `Avatar` | `@ui-sdk/react/avatar` con las clases `hs-avatar` |
-| Diálogos, menús, toasts, tooltips | `dialog`, `menu`, `toast`, `tooltip` de UI SDK; aún sin estilo `hs-*` |
+| `Separator`, `Progress`, `Accordion`, `Pagination` | `separator`, `progress`, `accordion`, `pagination` |
+| `Dialog` | `dialog`; confirmaciones destructivas con `alert-dialog` (`hs-dialog*`) |
+| `Drawer` | `drawer` (`hs-dialog hs-dialog--drawer`) |
+| `Menu`, `Popover`, `Tooltip` | `menu`, `popover` (o `hover-card`), `tooltip` |
+| `Toaster` | `toast` (`hs-toaster`, `hs-toast`) |
+| `Skeleton`, `Alert`, `Breadcrumb`, `Table` | Sin primitiva: marcado semántico propio (`nav`, `table`, `role="status"`) con clases `hs-*` |
 | `PresencePill`, `ActivityFeed`, `TeamSlots`, `AgentTag`, `Countdown`, tarjetas, layout | Sin primitiva: son marcado propio con clases `hs-*` |
+
+Todavía no hay versión `hs-*` de: calendario y selector de fecha, combobox, paleta de comandos, carrusel, slider y gráficos. Si una vista los necesita, parte de la primitiva de UI SDK y agrégala aquí.
+
+**Cuál superpuesto usar**
+
+| Necesito… | Usa |
+| --- | --- |
+| Nombrar un botón de solo ícono | `Tooltip` |
+| Una lista de acciones | `Menu` |
+| Un panel pequeño de contenido junto a su botón | `Popover` |
+| Una tarea corta o una confirmación | `Dialog` |
+| Contenido largo o filtros, sin perder la página | `Drawer` |
+| Avisar algo breve que puede desaparecer | `toast()` |
+| Un mensaje que debe quedarse en la página | `Alert` |
 
 ## Contenido hecho por agentes
 

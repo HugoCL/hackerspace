@@ -172,6 +172,11 @@ it("cites the page Firecrawl scraped after a redirect and keeps the search link"
     }),
   );
   await search();
+  const [found] = await candidates();
+  expect(found.discoveredFromUrl).toBe(searchUrl);
+  expect(
+    found.provenance.every((entry) => entry.sourceUrl === officialUrl),
+  ).toBe(true);
   stubFirecrawl(searchBody(event));
   await search();
 
@@ -301,7 +306,7 @@ it.each([
   ],
   [
     "an ended event dated with timestamps",
-    { startDate: "2026-10-01T08:30:00", endDate: "2026-10-02T18:30:00" },
+    { startDate: "2026-10-01T08:30:00", endDate: "2026-10-02T18:30:00Z" },
   ],
 ])("drops results with %s", async (_name, patch) => {
   const { search, candidates } = setup();
@@ -310,6 +315,18 @@ it.each([
   await search();
 
   expect(await candidates()).toEqual([]);
+});
+
+it("drops a date with trailing words instead of reading its first ten characters", async () => {
+  const { search, candidates } = setup();
+  stubFirecrawl(
+    searchBody(withJson({ startDate: "2026-12-01 (registration deadline)" })),
+  );
+
+  await search();
+
+  const [candidate] = await candidates();
+  expect(candidate.proposal.startsOn).toBeUndefined();
 });
 
 it("ignores an unsafe official URL and keeps the page URL", async () => {

@@ -21,9 +21,8 @@ const httpUrl = z.url({ protocol: /^https?$/ }).max(2048);
 const text = (max: number) => z.string().trim().min(1).max(max);
 // The extractor sometimes answers with a timestamp; the calendar day is what we keep.
 const day = z
-  .string()
-  .transform((value) => value.slice(0, 10))
-  .pipe(z.iso.date());
+  .union([z.iso.date(), z.iso.datetime({ local: true, offset: true })])
+  .transform((value) => value.slice(0, 10));
 // A bad optional field is dropped; the rest of the result is still usable.
 const optional = <T extends z.ZodType>(schema: T) =>
   schema

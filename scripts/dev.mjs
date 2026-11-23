@@ -18,10 +18,9 @@
 // or from .env.local, and CONVEX_AGENT_MODE is removed. Cloud mode refuses to start when the key
 // or CONVEX_DEPLOYMENT targets production (`prod:` prefix, or a legacy key with no prefix),
 // because this script pushes and seeds.
-// Before starting, `convex dev --once --run seed:ensure` pushes and fills empty tables with
-// sample data (see convex/seed.ts). It only touches tables that are empty, so it is also kept in
-// cloud mode. Set DEV_SEED=0 to skip it. The seed step and the dev step share one environment, so
-// they always target the same deployment.
+// Before starting, a one-shot push seeds empty tables. On anonymous local and personal dev
+// deployments it also completes pending migrations before serving the app. Set DEV_SEED=0
+// to skip preparation. Both pushes share the same deployment selectors.
 // Extra arguments are forwarded to `convex dev` only. They can change the target (--url,
 // --configure, --env-file), so when any are given the seed step is skipped.
 // Stopping: convex cleans up `next dev` and the local backend only on SIGINT, so SIGINT, SIGTERM
@@ -199,12 +198,15 @@ const extraArgs = process.argv.slice(2);
 if (process.env.DEV_SEED !== "0" && extraArgs.length > 0) {
   console.log("dev: extra arguments given, skipping the seed step");
 } else if (process.env.DEV_SEED !== "0") {
-  console.log("dev: seeding empty tables (seed:ensure)");
-  const seed = await convex(["dev", "--once", "--run", "seed:ensure"]);
-  if (stopping) process.exit(exitCode(seed));
-  if (seed.code !== 0) {
+  const migrate =
+    mode.anonymous || (mode.key?.value ?? mode.deployment)?.startsWith("dev:");
+  const prepare = migrate ? "migrations:prepareDev" : "seed:ensure";
+  console.log(`dev: preparing data (${prepare})`);
+  const result = await convex(["dev", "--once", "--run", prepare]);
+  if (stopping) process.exit(exitCode(result));
+  if (result.code !== 0) {
     console.warn(
-      "dev: the seed step failed, starting dev anyway (DEV_SEED=0 skips it)",
+      "dev: data preparation failed, starting dev anyway (DEV_SEED=0 skips it)",
     );
   }
 }

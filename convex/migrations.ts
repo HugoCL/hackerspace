@@ -1,7 +1,7 @@
 import { Migrations } from "@convex-dev/migrations";
 import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
-import { internalMutation } from "./_generated/server";
+import { internalAction, internalMutation } from "./_generated/server";
 import { legacyLookingFor, teamSearchText } from "./teamText";
 
 // Use this file for every destructive schema change and every backfill:
@@ -54,14 +54,39 @@ export const backfillTeamMemberCount = migrations.define({
   },
 });
 
+const pendingMigrations = [
+  internal.migrations.migrateTeamLookingFor,
+  internal.migrations.backfillTeamMemberCount,
+];
+
 // `pnpm migrate`: runs the listed migrations in order. Add new ones to this list.
 export const runAll = internalMutation({
   args: {},
   handler: async (ctx) => {
-    await migrations.runSerially(ctx, [
-      internal.migrations.migrateTeamLookingFor,
-      internal.migrations.backfillTeamMemberCount,
-    ]);
+    await migrations.runSerially(ctx, pendingMigrations);
     return null;
+  },
+});
+
+export const prepareDev = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    await ctx.runMutation(internal.seed.ensure, {});
+    await ctx.runMutation(internal.migrations.runAll, {});
+    const deadline = Date.now() + 30_000;
+    while (Date.now() < deadline) {
+      const statuses = await migrations.getStatus(ctx, {
+        migrations: pendingMigrations,
+      });
+      if (statuses.every(({ isDone }) => isDone)) return null;
+      const failed = statuses.find(
+        ({ state }) => state === "failed" || state === "canceled",
+      );
+      if (failed) throw new Error(`Migration ${failed.name} ${failed.state}.`);
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    throw new Error(
+      "Timed out waiting for dev migrations. Run pnpm migrate to resume.",
+    );
   },
 });

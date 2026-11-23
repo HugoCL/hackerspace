@@ -276,9 +276,7 @@ it("backfills the membership count, including members added while it was absent"
 
   await join(applicant);
   expect(await counts()).toEqual([null]);
-  await t.mutation(internal.migrations.backfillTeamMemberCount, {
-    batchSize: 10,
-  });
+  await t.action(internal.migrations.prepareDev, {});
   expect(await counts()).toEqual([2]);
   await join(outsider);
   expect(await counts()).toEqual([3]);

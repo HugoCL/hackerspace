@@ -74,7 +74,7 @@ export default async function HackathonProfile({
                     Explorar
                   </Link>
                 </li>
-                <li aria-current="page">Perfil de hackathon</li>
+                <li aria-current="page">{event.title}</li>
               </ol>
             </nav>
             <div className="flex flex-wrap items-center gap-2">

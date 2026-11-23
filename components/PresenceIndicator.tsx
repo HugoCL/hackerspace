@@ -23,14 +23,31 @@ export default function PresenceIndicator({
         ? "1000+ viendo"
         : `${count} viendo`;
   const Pill = interactive ? PopoverTrigger : "span";
+  const visitorLabel =
+    visitors === 0
+      ? null
+      : visitors > 1000
+        ? "+1000 visitantes o más"
+        : `+${visitors} visitante${visitors === 1 ? "" : "s"}`;
 
   return (
-    <span
-      aria-atomic={announce ? true : undefined}
-      aria-live={announce ? "polite" : undefined}
-      className="inline-flex flex-wrap items-center gap-2 text-xs tabular-nums"
-      role={announce ? "status" : undefined}
-    >
+    <span className="inline-flex flex-wrap items-center gap-2 text-xs tabular-nums">
+      {announce && (
+        <span
+          aria-atomic="true"
+          aria-live="polite"
+          className="sr-only"
+          role="status"
+        >
+          <span>{label}</span>
+          {visitorLabel && (
+            <>
+              {" "}
+              · <span>{visitorLabel}</span>
+            </>
+          )}
+        </span>
+      )}
       <Pill
         aria-label={
           interactive ? `Ver quién está mirando: En vivo · ${label}` : undefined
@@ -54,11 +71,12 @@ export default function PresenceIndicator({
         </span>
         {children}
       </Pill>
-      {visitors > 0 && (
-        <span className="whitespace-nowrap text-muted-foreground">
-          {visitors > 1000
-            ? "+1000 visitantes o más"
-            : `+${visitors} visitante${visitors === 1 ? "" : "s"}`}
+      {visitorLabel && (
+        <span
+          aria-hidden={announce || undefined}
+          className="whitespace-nowrap text-muted-foreground"
+        >
+          {visitorLabel}
         </span>
       )}
     </span>

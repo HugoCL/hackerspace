@@ -131,19 +131,21 @@ def check():
                 ).to_be_visible()
                 breadcrumb = page.get_by_role("navigation", name="Ruta de navegación")
                 expect(breadcrumb.get_by_role("link", name="Explorar")).to_have_attribute("href", "/")
-                expect(breadcrumb.locator('[aria-current="page"]')).to_have_text("Perfil de hackathon")
+                expect(breadcrumb.locator('[aria-current="page"]')).to_have_text("Código sin Fronteras")
                 sidebar = page.get_by_role("complementary")
                 expect(page.get_by_role("region", name="Datos del evento")).to_contain_text(
                     "En línea"
                 )
                 presence = page.get_by_role("region", name="Presencia en vivo")
                 live_status = presence.locator("[aria-live=polite]")
-                pill = live_status.locator(".hs-presence")
+                pill = presence.locator(".hs-presence")
                 count = pill.locator(".hs-presence-count")
                 expect(pill.get_by_text("En vivo", exact=True)).to_be_visible()
                 expect(count).to_have_text("0 viendo")
                 expect(pill).to_have_text("En vivo·0 viendo")
-                expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible()
+                expect(live_status.get_by_text("0 viendo", exact=True)).to_have_count(1)
+                expect(live_status.get_by_text("+1 visitante", exact=True)).to_have_count(1)
+                expect(live_status.get_by_role("button")).to_have_count(0)
                 assert pill.locator(".hs-presence-dot").evaluate(
                     "(dot) => getComputedStyle(dot, '::after').content"
                 ) == "none"
@@ -250,10 +252,12 @@ def check():
                     expect(count).to_have_text("0 viendo")
                     expect(catalog_card.get_by_text("+9 visitantes", exact=True)).to_be_visible()
                     expect(catalog_card.locator(".hs-presence--sm")).to_have_text("0 viendo")
+                    for extra_context in extra_contexts:
+                        extra_context.pages[0].evaluate("setTimeout(() => location.href = 'about:blank', 0)")
+                    expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=5_000)
                 finally:
                     for extra_context in extra_contexts:
                         extra_context.close()
-                expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=20_000)
                 assert not navigations, f"Presence updated after navigation: {navigations}"
                 presence.screenshot(path=str(ARTIFACTS / "presence-after-close.png"))
             finally:

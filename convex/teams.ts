@@ -333,12 +333,24 @@ export const conversations = query({
     return {
       ...result,
       page: await Promise.all(
-        result.page.map(async ({ _id, participantId }) => ({
-          _id,
-          displayName:
-            (await ctx.db.get("users", participantId))?.displayName ??
-            "Participante",
-        })),
+        result.page.map(async ({ _id, participantId, updatedAt }) => {
+          const [participant, lastMessage] = await Promise.all([
+            ctx.db.get("users", participantId),
+            ctx.db
+              .query("teamMessages")
+              .withIndex("by_conversationId", (q) =>
+                q.eq("conversationId", _id),
+              )
+              .order("desc")
+              .first(),
+          ]);
+          return {
+            _id,
+            displayName: participant?.displayName ?? "Participante",
+            lastMessage: lastMessage?.body ?? null,
+            lastMessageAt: lastMessage?._creationTime ?? updatedAt,
+          };
+        }),
       ),
     };
   },
@@ -350,15 +362,21 @@ export const conversation = query({
     const access = await conversationAccess(ctx, conversationId);
     if (!access) return null;
     const { team, user, conversation } = access;
+    const isOwner = team.ownerId === user._id;
+    const contactId =
+      user._id === conversation.participantId
+        ? team.ownerId
+        : conversation.participantId;
+    const contact = contactId ? await ctx.db.get("users", contactId) : null;
+    const isMember =
+      isOwner &&
+      !!(await membership(ctx, team._id, conversation.participantId));
     return {
       displayName:
-        user._id === conversation.participantId
-          ? team.name
-          : ((await ctx.db.get("users", conversation.participantId))
-              ?.displayName ?? "Participante"),
-      canAdd:
-        team.ownerId === user._id &&
-        !(await membership(ctx, team._id, conversation.participantId)),
+        contact?.displayName ??
+        (user._id === conversation.participantId ? team.name : "Participante"),
+      canAdd: isOwner && !isMember,
+      isMember,
     };
   },
 });
@@ -381,8 +399,11 @@ export const messages = query({
     return {
       ...result,
       page: await Promise.all(
-        result.page.map(async ({ _id, senderId, body }) => ({
+        result.page.map(async ({ _id, _creationTime, senderId, body }) => ({
           _id,
+          _creationTime,
+          senderId,
+          isMine: senderId === access.user._id,
           body,
           displayName:
             senderId === access.user._id

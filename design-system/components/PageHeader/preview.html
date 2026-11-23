@@ -1,0 +1,20 @@
+<!-- @dsCard group="Layout" height=200 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>PageHeader</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.PageHeader,{
+    eyebrow: h(React.Fragment,null, h(H.PresencePill,{count:23,size:'sm'}), h(H.AgentTag,{name:'scout'})),
+    title:'Santiago Hacks 2027',
+    description:'48 horas para construir con IA y datos abiertos de la ciudad. Equipos de 2 a 4.',
+    meta: h(React.Fragment,null, h('span',null,h(H.Icon,{name:'calendar'}),' 14–16 mar'), h('span',null,h(H.Icon,{name:'pin'}),' Santiago, Chile'), h(H.Badge,{tone:'presencial'},'Presencial')),
+    actions: h(React.Fragment,null, h(H.Button,{variant:'secondary'},'Ver bases'), h(H.Button,{variant:'signal',icon:'users'},'Busco equipo'))
+  }));
+</script>
+</body>
+</html>

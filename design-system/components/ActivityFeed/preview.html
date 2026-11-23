@@ -1,0 +1,19 @@
+<!-- @dsCard group="Live" height=260 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>ActivityFeed</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h('div',{style:{maxWidth:440}}, h(H.ActivityFeed,{items:[
+    {time:'ahora',actor:{name:'Camila Rojas'},action:'se unió a',target:'Los Compiladores',isNew:true},
+    {time:'2 min',actor:{name:'scout',agent:true},action:'creó el perfil de',target:'Valpo Hack 2027'},
+    {time:'5 min',actor:{name:'Diego Muñoz'},action:'publicó',target:'MicroBus'},
+    {time:'12 min',actor:{name:'Ana Pérez'},action:'busca equipo en',target:'Santiago Hacks'}
+  ]})));
+</script>
+</body>
+</html>

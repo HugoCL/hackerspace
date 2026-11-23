@@ -1,0 +1,122 @@
+# Hackerspace
+
+Un lugar en vivo para descubrir hackathones, formar equipos y compartir proyectos.
+
+Hackerspace se tiene que sentir como entrar a una sala llena: ves quién más está mirando una hackathon, qué equipos se están armando ahora mismo y qué se acaba de publicar. El sistema es sobrio a propósito (papel, tinta, una lima de marca) para que lo único que "se mueve" sea la gente.
+
+> **Estado:** primera versión, creada sin marca previa. No hay logo todavía: el nombre se escribe en Space Grotesk 600. Los tokens están nombrados como los de UI SDK (`--ui-*`) del stack de `hackathon-toolbox` (Next.js + Convex + Clerk + UI SDK + Tailwind 4), así que `tokens.css` reemplaza directamente `app/tokens.css`.
+
+## Principios
+
+1. **Lo vivo es naranja, y solo lo vivo.** `hs-live` marca presencia y actividad en tiempo real (punto de presencia, "23 viendo", alguien se unió a un equipo). Si no está pasando ahora, no es naranja.
+2. **Lo redondo es una persona.** `radius-full` solo para avatares, puntos de presencia y la píldora EN VIVO. Todo lo demás usa `radius-sm` (controles) o `radius-md` (tarjetas).
+3. **Humano vs. agente, siempre visible.** Todo lo que crea o hace un agente IA (el scout de hackathones con Firecrawl, el agente de un usuario vía API) lleva la etiqueta mono `hs-agent` con borde punteado: "AGENTE · scout". Nunca se disfraza de persona.
+4. **Bordes, no sombras.** Las tarjetas (`hs-surface`) se separan del fondo con `ui-border`. Sin gradientes.
+5. **Una acción primaria por vista** en `ui-primary` (bloque de tinta). La lima `hs-signal` se reserva para el único llamado que más importa (p. ej. "Abierto a equipo").
+
+## Voz y contenido
+
+- Español neutro, tuteo, frases cortas. "Únete al equipo", no "Solicitar incorporación".
+- Fechas y lugares primero: **Valparaíso · 14–16 mar**. La modalidad como chip: *Presencial* (tinta) o *Virtual* (`hs-virtual`).
+- Cifras vivas en mono tabular (`.live`): `● EN VIVO · 23 VIENDO`, `3 LUGARES LIBRES`, `02:14:09`.
+- Estados vacíos que invitan: "Nadie está buscando equipo aún. Sé el primero."
+- Perfiles generados por el scout dicen de dónde salieron: "Creado por AGENTE · scout desde devpost.com · revisado por 2 personas".
+
+## Fundamentos visuales
+
+### Color
+
+| Rol | Token | Uso |
+| --- | --- | --- |
+| Papel / tinta | `ui-background`, `ui-foreground` | Base de todo. 16.5:1. |
+| Tarjeta | `hs-surface` + `ui-border` | Hackathon, equipo, proyecto. |
+| Secundario | `ui-muted`, `ui-muted-foreground` | Metadatos, hover, chips neutros. |
+| Marca | `hs-signal` + `hs-signal-ink` | Relleno lima con tinta encima. Nunca texto lima. |
+| En vivo | `hs-live`, `hs-live-ink`, `hs-live-soft` | Presencia y actividad en tiempo real. |
+| Virtual | `hs-virtual`, `hs-virtual-soft` | Modalidad virtual. |
+| Agente | `hs-agent` | Etiquetas de acciones automatizadas. |
+| Error | `ui-destructive` | Solo estados. |
+
+Contraste verificado en ambos temas: texto ≥4.5:1, bordes de control y punto en vivo ≥3:1. Excepción conocida: `hs-signal` sobre papel claro es 1.2:1, por eso solo se usa como relleno con `hs-signal-ink` encima (13.8:1).
+
+### Tipografía
+
+- **Space Grotesk** (display, 600): títulos y el nombre.
+- **Geist** (sans): texto y controles; `ui` = 13px como `--ui-font-size`.
+- **Geist Mono**: todo lo que cuenta o cambia en vivo, y las etiquetas de agente.
+
+Las tres vienen de Google Fonts; no hay archivos de fuente en el sistema.
+
+### Espacio y forma
+
+Rejilla de 4px (`space-1` = `--ui-spacing`). Tarjetas con `space-4` de padding y `space-6` de gap. Radios: `radius-sm` 4px (controles, = `--ui-radius`), `radius-md` 8px (tarjetas), `radius-full` (personas y "ahora").
+
+## Patrones en vivo
+
+- **Píldora de presencia:** fondo `hs-live-soft`, punto `hs-live` 8px `radius-full` con pulso suave (respeta `prefers-reduced-motion`), texto `.live` en `hs-live-ink`.
+- **Pila de avatares:** hasta 5 avatares solapados `space-2`, borde 2px `hs-surface`, y "+18" en `.caption`.
+- **Feed de actividad:** filas con hora mono, actor (persona o etiqueta de agente) y acción. Las nuevas entran arriba con un destello `hs-live-soft` que se desvanece.
+- **Cupos de equipo:** ranuras vacías como círculos con borde punteado `ui-input`; ocupadas con avatar.
+
+## Iconografía
+
+Set lineal de 1.5px en `currentColor` (componente `Icon`: search, pin, calendar, users, heart, plus, bell, bot, trophy, globe, arrow, menu, code). 16px en controles, 14px en metadatos, 20–28px en estados vacíos. Para ampliar, Lucide con el mismo trazo. `pin` = presencial, `globe` = virtual, `bot` = agente. El único ícono relleno es el punto en vivo.
+
+## Componentes
+
+23 componentes en cuatro grupos (cada uno con guía y preview en vivo):
+
+- **Layout:** `AppShell`, `PageHeader`, `Section`, `Stack`, `Grid`.
+- **Acciones y formularios:** `Button`, `Tabs`, `Input`, `Select`.
+- **Display:** `Icon`, `Badge`, `Card`, `Avatar`, `AvatarStack`, `EmptyState`.
+- **En vivo:** `PresencePill`, `Countdown`, `AgentTag`, `ActivityFeed`, `TeamSlots`.
+- **Tarjetas de dominio:** `HackathonCard`, `TeamCard`, `ProjectCard`.
+
+Los componentes solo pintan: reciben datos ya resueltos (conteos, nombres, fechas formateadas) por props y no saben de dónde vienen.
+
+## Layouts y vistas
+
+Toda vista es la misma columna vertebral:
+
+```
+AppShell (nav · acciones · banner en vivo opcional · aside opcional)
+└─ PageHeader (eyebrow en vivo · título · meta · acciones)
+   └─ Tabs (opcional, para subvistas)
+      └─ Section × n (título · count · acción "Ver todos")
+         └─ Grid de tarjetas | ActivityFeed | contenido | EmptyState
+```
+
+**Reglas de composición**
+
+- Ancho máximo 1200px; margen lateral `space-4`. Entre Sections `space-12`; dentro, `space-4`; entre tarjetas `space-6`.
+- Un **aside** (320px) solo cuando hay algo vivo o de contexto que acompañar: presencia, feed, tu equipo. Bajo 900px cae debajo del contenido.
+- Una acción `primary` por vista, y como máximo una `signal`.
+- Lo vivo arriba: si algo pasa ahora (gente viendo, cuenta regresiva), va en el eyebrow del PageHeader o en el banner, no enterrado.
+- Grillas homogéneas: un tipo de tarjeta por Grid. `min` 280 para hackathones y equipos, 260 para proyectos.
+- Toda lista puede quedar vacía: diseña su EmptyState con una acción.
+
+**Vistas base**
+
+| Vista | Estructura |
+| --- | --- |
+| **Explorar** (inicio) | PageHeader "Hackathones cerca de ti" + Input de búsqueda y Selects (modalidad, fecha) · Tabs Presenciales / Virtuales · Section "Esta semana" y "Próximas" con Grid de HackathonCard · aside: PresencePill global + ActivityFeed. |
+| **Perfil de hackathon** | PageHeader con PresencePill (con caras) y AgentTag si la creó el scout, meta fecha/lugar/modalidad, acciones "Ver bases" + `signal` "Busco equipo" · Countdown en el banner · Tabs Resumen / Bases y reglas / Equipos / Proyectos · aside: ActivityFeed de esa hackathon. |
+| **Equipos** | PageHeader + filtros · Section "Buscan gente ahora" (Grid de TeamCard con `activeNow` primero) · Section "Personas buscando equipo" (Avatares + roles en Badge `signal`). |
+| **Galería de proyectos** | PageHeader + Tabs (Destacados / Recientes / Premiados) · Grid de ProjectCard `min=260`. |
+| **Perfil de equipo** | PageHeader con nombre, hackathon y TeamSlots · pitch · roles buscados · acción `signal` "Postular" · aside: ActivityFeed del equipo. |
+| **Perfil de persona** | PageHeader con Avatar `lg` + `online` · Badges de habilidades · Sections "Hackathones" y "Proyectos". |
+
+**Responsive**
+
+- Móvil primero: Grid colapsa a una columna sola; la nav del AppShell hace scroll horizontal; las acciones del PageHeader bajan debajo del título.
+- Nada se oculta en móvil que sea en vivo: PresencePill y Countdown siempre visibles.
+
+## Contenido hecho por agentes
+
+- Todo perfil, mensaje o acción creada por un agente lleva `AgentTag` junto al contenido: en tarjetas (prop `source`), en el eyebrow del PageHeader y en cada fila del feed.
+- Un perfil creado por el scout muestra de dónde salió ("Encontrado en devpost.com") en el `title` del AgentTag o en la meta.
+- Los agentes nunca tienen Avatar, nunca cuentan en PresencePill como personas, y nunca usan `hs-live` ni `hs-signal`.
+
+## En el código
+
+El `tokens.css` generado por este sistema reemplaza `app/tokens.css` del toolbox (mismos nombres `--ui-*`). Para Tailwind, mapear los `hs-*` en `@theme inline` (`--color-signal: var(--hs-signal)`, `--color-live: var(--hs-live)`, …). Los componentes de este sistema son la referencia visual y de API; las clases `hs-*` de `components/bundle.css` se pueden portar tal cual.

@@ -1,0 +1,15 @@
+<!-- @dsCard group="Display" height=80 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Icon</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+var names=['search','pin','calendar','users','heart','plus','bell','bot','trophy','globe','arrow','menu','code'];
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{direction:'row',gap:6,wrap:true}, names.map(function(n){ return h('span',{key:n,title:n,style:{display:'inline-flex',flexDirection:'column',alignItems:'center',gap:4,fontSize:11,color:'var(--ui-muted-foreground)'}}, h(H.Icon,{name:n,size:20,className:'x'}), n); })));
+</script>
+</body>
+</html>

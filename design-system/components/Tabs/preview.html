@@ -1,0 +1,14 @@
+<!-- @dsCard group="Actions" height=110 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Tabs</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Tabs,{label:'Secciones de la hackathon', items:[{value:'r',label:'Resumen'},{value:'b',label:'Bases y reglas'},{value:'e',label:'Equipos',count:12},{value:'p',label:'Proyectos',count:34}]}));
+</script>
+</body>
+</html>

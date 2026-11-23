@@ -1,0 +1,15 @@
+<!-- @dsCard group="Layout" height=180 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Section</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Section,{title:'Equipos buscando gente',count:12, action:h(H.Button,{variant:'ghost',iconEnd:'arrow'},'Ver todos')},
+    h(H.Grid,{min:180}, h(H.Card,null,'Equipo A'), h(H.Card,null,'Equipo B'), h(H.Card,null,'Equipo C'))));
+</script>
+</body>
+</html>

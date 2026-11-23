@@ -1,0 +1,15 @@
+<!-- @dsCard group="Display" height=90 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Avatar</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{direction:'row',gap:4,align:'center'},
+    h(H.Avatar,{name:'Camila Rojas',size:'lg',online:true}), h(H.Avatar,{name:'Diego Muñoz',size:'md'}), h(H.Avatar,{name:'Ana Pérez',size:'md',online:true}), h(H.Avatar,{name:'Tomás Vera',size:'sm'}), h(H.Avatar,{name:'Sofía Lagos',size:'xs'})));
+</script>
+</body>
+</html>

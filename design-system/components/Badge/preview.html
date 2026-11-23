@@ -1,0 +1,16 @@
+<!-- @dsCard group="Display" height=90 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Badge</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{direction:'row',gap:2,wrap:true},
+    h(H.Badge,{tone:'presencial'},'Presencial'), h(H.Badge,{tone:'virtual'},'Virtual'), h(H.Badge,null,'IA'), h(H.Badge,null,'Fintech'),
+    h(H.Badge,{tone:'signal'},'Frontend'), h(H.Badge,{tone:'signal',icon:'trophy'},'1er lugar'), h(H.Badge,{tone:'live'},'En curso'), h(H.Badge,{tone:'danger'},'Cerrada')));
+</script>
+</body>
+</html>

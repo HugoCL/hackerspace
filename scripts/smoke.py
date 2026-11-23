@@ -128,7 +128,7 @@ def check():
                 ).to_be_visible()
                 breadcrumb = page.get_by_role("navigation", name="Ruta de navegación")
                 expect(breadcrumb.get_by_role("link", name="Explorar")).to_have_attribute("href", "/")
-                expect(breadcrumb.locator('[aria-current="page"]')).to_have_text("Perfil de hackathon")
+                expect(breadcrumb.locator('[aria-current="page"]')).to_have_text("Código sin Fronteras")
                 sidebar = page.get_by_role("complementary")
                 expect(sidebar.get_by_role("region", name="Datos del evento")).to_contain_text(
                     "En línea"

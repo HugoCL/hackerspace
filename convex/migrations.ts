@@ -1,7 +1,8 @@
 import { Migrations } from "@convex-dev/migrations";
-import { components } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
-import { internalMutation } from "./_generated/server";
+import { internalAction, internalMutation } from "./_generated/server";
+import { legacyLookingFor, teamSearchText } from "./teamText";
 
 // Use this file for every destructive schema change and every backfill:
 //   1. make the schema accept old and new data (new field optional, old field optional),
@@ -14,11 +15,78 @@ export const migrations = new Migrations<DataModel>(components.migrations);
 // `convex run migrations:run '{"fn":"migrations:<name>"}'` runs one migration by name.
 export const run = migrations.runner();
 
+export const migrateTeamLookingFor = migrations.define({
+  table: "teams",
+  migrateOne: (_ctx, team) => {
+    if (
+      team.rolesWanted === undefined &&
+      team.searchableRoles === undefined &&
+      team.lookingFor !== undefined &&
+      team.searchableText !== undefined
+    )
+      return;
+    const legacy = legacyLookingFor(team.rolesWanted);
+    const lookingFor = team.lookingFor ?? legacy.text;
+    return {
+      lookingFor,
+      searchableText: teamSearchText(team.name, lookingFor),
+      ...(legacy.truncated && team.rolesWanted
+        ? { archivedRoles: team.rolesWanted }
+        : {}),
+      rolesWanted: undefined,
+      searchableRoles: undefined,
+    };
+  },
+});
+
+export const backfillTeamMemberCount = migrations.define({
+  table: "teams",
+  batchSize: 1,
+  migrateOne: async (ctx, team) => {
+    if (team.memberCount !== undefined) return;
+    let memberCount = 0;
+    for await (const _member of ctx.db
+      .query("teamMembers")
+      .withIndex("by_teamId_and_userId", (q) => q.eq("teamId", team._id))) {
+      memberCount++;
+    }
+    return { memberCount };
+  },
+});
+
+const pendingMigrations = [
+  internal.migrations.migrateTeamLookingFor,
+  internal.migrations.backfillTeamMemberCount,
+];
+
 // `pnpm migrate`: runs the listed migrations in order. Add new ones to this list.
 export const runAll = internalMutation({
   args: {},
   handler: async (ctx) => {
-    await migrations.runSerially(ctx, []);
+    await migrations.runSerially(ctx, pendingMigrations);
     return null;
+  },
+});
+
+export const prepareDev = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    await ctx.runMutation(internal.seed.ensure, {});
+    await ctx.runMutation(internal.migrations.runAll, {});
+    const deadline = Date.now() + 30_000;
+    while (Date.now() < deadline) {
+      const statuses = await migrations.getStatus(ctx, {
+        migrations: pendingMigrations,
+      });
+      if (statuses.every(({ isDone }) => isDone)) return null;
+      const failed = statuses.find(
+        ({ state }) => state === "failed" || state === "canceled",
+      );
+      if (failed) throw new Error(`Migration ${failed.name} ${failed.state}.`);
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    throw new Error(
+      "Timed out waiting for dev migrations. Run pnpm migrate to resume.",
+    );
   },
 });

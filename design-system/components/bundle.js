@@ -657,31 +657,50 @@
   }
   function useMorph(words, opts) {
     var home = opts.home, every = opts.joinEvery, paused = opts.paused;
-    var st = React.useState(home);
+    var st = React.useState({ text: home, word: home, phase: 'in' });
     var pos = React.useRef({ i: 0, n: 0, word: home });
     React.useEffect(function () {
       if (paused) return;
       var timer, raf, alive = true;
       function next() {
-        var s = pos.current, to;
-        if (s.word !== home && s.n >= every) { to = home; s.n = 0; }
+        var s = pos.current, from = s.word, to;
+        if (from !== home && s.n >= every) { to = home; s.n = 0; }
         else { to = words[s.i % words.length]; s.i++; s.n++; }
-        var from = s.word, start = null, last = 0;
         s.word = to;
+        if (to !== home) {
+          st[1](function (prev) { return { text: prev.text, word: prev.word, phase: 'out' }; });
+          timer = setTimeout(function () {
+            st[1]({ text: to, word: to, phase: 'in' });
+            timer = setTimeout(next, 3200);
+          }, 220);
+          return;
+        }
+        var start = null, last = 0;
         function step(t) {
           if (!alive) return;
           if (start === null) start = t;
-          var p = Math.min(1, (t - start) / 700);
-          if (p === 1) { st[1](to); timer = setTimeout(next, to === home ? 4200 : 2400); return; }
-          if (t - last > 45) { last = t; st[1](morphFrame(from, to, p)); }
+          var p = Math.min(1, (t - start) / 800);
+          if (p === 1) { st[1]({ text: home, word: home, phase: 'in' }); timer = setTimeout(next, 4200); return; }
+          if (t - last > 45) { last = t; st[1]({ text: morphFrame(from, home, p), word: home, phase: 'decode' }); }
           raf = requestAnimationFrame(step);
         }
         raf = requestAnimationFrame(step);
       }
       timer = setTimeout(next, pos.current.word === home ? 3000 : 1200);
-      return function () { alive = false; clearTimeout(timer); cancelAnimationFrame(raf); st[1](pos.current.word); };
+      return function () {
+        alive = false; clearTimeout(timer); cancelAnimationFrame(raf);
+        st[1]({ text: pos.current.word, word: pos.current.word, phase: 'in' });
+      };
     }, [paused]);
-    return { text: st[0], split: pos.current.word !== home };
+    return st[0];
+  }
+  function morphLetters(text) {
+    var seg = 0;
+    return text.split('').map(function (c, i) {
+      var el = h('span', { key: i, className: 'hs-footer-ch', style: { '--i': i }, 'data-seg': seg, 'data-ch': c === '+' ? 'plus' : undefined }, c);
+      if (c === '+' || c === ' ' || c === '-') seg++;
+      return el;
+    });
   }
   function prefersReducedMotion() {
     return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -696,12 +715,16 @@
     return h('footer', { className: cx('hs-footer', props.className) },
       h('div', { className: 'hs-footer-inner' },
         h('div', { className: 'hs-footer-top' },
-          h('p', { className: cx('hs-footer-mark', m.split && 'hs-footer-mark--split') },
+          h('p', {
+            className: cx('hs-footer-mark', m.word !== 'hacker' && 'hs-footer-mark--split', m.phase === 'out' && 'hs-footer-mark--out'),
+            'data-word': m.phase === 'decode' ? 'decode' : m.word.replace(/[^a-z0-9]+/g, '-')
+          },
             h('span', { className: 'hs-sr-only' }, 'Hackerspace'),
             h('span', { 'aria-hidden': true },
-              h('span', { className: 'hs-footer-word' }, m.text),
+              h('span', { className: 'hs-footer-word', key: m.phase === 'decode' ? 'decode' : m.word }, morphLetters(m.text)),
               h('span', { className: 'hs-footer-gap' }),
-              'space')),
+              'space',
+              h('span', { className: 'hs-footer-glyph', key: 'g-' + m.word }, h('span', { className: 'hs-footer-glyph-ink' })))),
           props.tagline ? h('p', { className: 'hs-footer-tagline' }, props.tagline) : null),
         props.columns && props.columns.length ? h('nav', { className: 'hs-footer-cols', 'aria-label': 'Pie de página' },
           props.columns.map(function (c, i) {

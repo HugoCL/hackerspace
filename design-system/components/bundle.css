@@ -371,9 +371,8 @@ body { margin: 0; background: var(--ui-background); color: var(--ui-foreground);
 .hs-footer { border-top: 1px solid var(--ui-border); background: var(--ui-background); }
 .hs-footer-inner { max-width: 1200px; margin: 0 auto; padding: var(--space-12) var(--space-4) var(--space-6); box-sizing: border-box; display: flex; flex-direction: column; gap: var(--space-12); }
 .hs-footer-top { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
-.hs-footer-mark { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: clamp(26px, 7vw, 96px); line-height: 1; letter-spacing: -0.03em; white-space: nowrap; overflow: hidden; padding-bottom: .08em; }
+.hs-footer-mark { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: clamp(24px, 6.6vw, 96px); line-height: 1; letter-spacing: -0.03em; white-space: nowrap; overflow: hidden; padding-bottom: .08em; }
 .hs-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-.hs-footer-word { white-space: pre; }
 .hs-footer-gap { display: inline-block; width: 0; transition: width .5s cubic-bezier(.3, .7, .2, 1); }
 .hs-footer-mark--split .hs-footer-gap { width: .26em; }
 .hs-footer-tagline { margin: 0; max-width: 48ch; color: var(--ui-muted-foreground); text-wrap: pretty; }
@@ -387,3 +386,111 @@ body { margin: 0; background: var(--ui-background); color: var(--ui-foreground);
 .hs-footer-pause:hover { color: var(--ui-foreground); }
 :where(.hs-footer-link, .hs-footer-pause):focus-visible { outline: 2px solid var(--ui-ring); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .hs-footer-gap { transition: none; } }
+
+/* Footer: each word has its own entrance and glyph. JS only sets data-word and splits letters. */
+.hs-footer-mark { padding-top: .12em; }
+.hs-footer-word { display: inline-block; }
+.hs-footer-ch { display: inline-block; white-space: pre; animation: hs-w-rise .45s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i) * 35ms); }
+.hs-footer-mark[data-word="hacker"] .hs-footer-ch, .hs-footer-mark[data-word="decode"] .hs-footer-ch { animation: none; }
+.hs-footer-mark--out .hs-footer-word .hs-footer-ch { animation: hs-w-out .2s ease-in both; animation-delay: 0s; }
+.hs-footer-mark--out .hs-footer-glyph { animation: hs-g-out .2s ease-in both; }
+@keyframes hs-w-rise { from { transform: translateY(40%); opacity: 0; } }
+@keyframes hs-w-out { to { transform: translateY(-25%); opacity: 0; filter: blur(4px); } }
+
+.hs-footer-glyph { display: none; overflow: hidden; width: .72em; height: .72em; margin-left: .2em; vertical-align: -.06em; border-radius: var(--radius-md); background: var(--hs-signal); animation: hs-g-in .4s cubic-bezier(.3, 1.4, .5, 1) .25s both; }
+.hs-footer-glyph-ink { display: block; width: 100%; height: 100%; background: var(--hs-signal-ink); mask: var(--hs-glyph) center / 68% no-repeat; -webkit-mask: var(--hs-glyph) center / 68% no-repeat; }
+@keyframes hs-g-in { from { transform: scale(.4); opacity: 0; } }
+@keyframes hs-g-out { to { transform: scale(.6); opacity: 0; } }
+
+.hs-footer-mark:is([data-word="builders"], [data-word="dreamers"], [data-word="ai-humans"], [data-word="never-settlers"], [data-word="tinkerers"], [data-word="first-timers"], [data-word="night-owls"], [data-word="misfits"], [data-word="makers"], [data-word="weekend-founders"], [data-word="what-if"]) .hs-footer-glyph { display: inline-block; }
+.hs-footer-mark[data-word="builders"] { --hs-glyph: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect x=%223%22 y=%2213%22 width=%228.5%22 height=%228%22 rx=%221%22/%3E%3Crect x=%2212.5%22 y=%2213%22 width=%228.5%22 height=%228%22 rx=%221%22/%3E%3Crect x=%227.75%22 y=%224%22 width=%228.5%22 height=%228%22 rx=%221%22/%3E%3C/svg%3E"); }
+.hs-footer-mark[data-word="dreamers"] { --hs-glyph: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Cpath d=%22M14 3a9 9 0 1 0 7 14.6A7.6 7.6 0 0 1 14 3z%22/%3E%3Ccircle cx=%2219%22 cy=%226%22 r=%221.6%22/%3E%3C/svg%3E"); }
+.hs-footer-mark[data-word="ai-humans"] { --hs-glyph: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%229%22 cy=%2212%22 r=%226%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Ccircle cx=%2215%22 cy=%2212%22 r=%226%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E"); }
+.hs-footer-mark[data-word="never-settlers"] { --hs-glyph: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Cpath d=%22M2.5 10.5h12.6l-3.8-3.8 2.1-2.1L21 12l-7.6 7.4-2.1-2.1 3.8-3.8H2.5z%22/%3E%3C/svg%3E"); }
+.hs-footer-mark[data-word="tinkerers"] { --hs-glyph: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect x=%2210.5%22 y=%221.5%22 width=%223%22 height=%225%22 rx=%221%22 transform=%22rotate(0 12 12)%22/%3E%3Crect x=%2210.5%22 y=%221.5%22 width=%223%22 height=%225%22 rx=%221%22 transform=%22rotate(45 12 12)%22/%3E%3Crect x=%2210.5%22 y=%221.5%22 width=%223%22 height=%225%22 rx=%221%22 transform=%22rotate(90 12 12)%22/%3E%3Crect x=%2210.5%22 y=%221.5%22 width=%223%22 height=%225%22 rx=%221%22 transform=%22rotate(135 12 12)%22/%3E%3Crect x=%2210.5%22 y=%221.5%22 width=%223%22 height=%225%22 rx=%221%22 transform=%22rotate(180 12 12)%22/%3E%3Crect x=%2210.5%22 y=%221.5%22 width=%223%22 height=%225%22 rx=%221%22 transform=%22rotate(225 12 12)%22/%3E%3Crect x=%2210.5%22 y=%221.5%22 width=%223%22 height=%225%22 rx=%221%22 transform=%22rotate(270 12 12)%22/%3E%3Crect x=%2210.5%22 y=%221.5%22 width=%223%22 height=%225%22 rx=%221%22 transform=%22rotate(315 12 12)%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%225%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%224%22/%3E%3C/svg%3E"); }
+.hs-footer-mark[data-word="first-timers"] { --hs-glyph: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Cpath d=%22M12 1.5l2.4 8.1 8.1 2.4-8.1 2.4-2.4 8.1-2.4-8.1L1.5 12l8.1-2.4z%22/%3E%3C/svg%3E"); }
+.hs-footer-mark[data-word="night-owls"] { --hs-glyph: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%227%22 cy=%2211%22 r=%224.6%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Ccircle cx=%2217%22 cy=%2211%22 r=%224.6%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Ccircle cx=%227%22 cy=%2211%22 r=%221.7%22/%3E%3Ccircle cx=%2217%22 cy=%2211%22 r=%221.7%22/%3E%3Cpath d=%22M12 15.5l-1.8 3.5h3.6z%22/%3E%3C/svg%3E"); }
+.hs-footer-mark[data-word="misfits"] { --hs-glyph: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%226.5%22 cy=%226.5%22 r=%223.5%22/%3E%3Ccircle cx=%2217.5%22 cy=%226.5%22 r=%223.5%22/%3E%3Ccircle cx=%226.5%22 cy=%2217.5%22 r=%223.5%22/%3E%3Crect x=%2214%22 y=%2214%22 width=%227%22 height=%227%22 rx=%221%22 transform=%22rotate(18 17.5 17.5)%22/%3E%3C/svg%3E"); }
+.hs-footer-mark[data-word="makers"] { --hs-glyph: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect x=%224%22 y=%223%22 width=%2214%22 height=%226%22 rx=%221.5%22/%3E%3Crect x=%229.5%22 y=%229%22 width=%223.4%22 height=%2212.5%22 rx=%221.2%22/%3E%3C/svg%3E"); }
+.hs-footer-mark[data-word="weekend-founders"] { --hs-glyph: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect x=%223%22 y=%225%22 width=%2218%22 height=%2216%22 rx=%222%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M3 10h18M8 3v4M16 3v4%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Crect x=%2211.5%22 y=%2213%22 width=%223.2%22 height=%223.2%22 rx=%22.6%22/%3E%3Crect x=%2215.8%22 y=%2213%22 width=%223.2%22 height=%223.2%22 rx=%22.6%22/%3E%3C/svg%3E"); }
+.hs-footer-mark[data-word="what-if"] { --hs-glyph: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Cpath d=%22M8 8.5a4 4 0 1 1 6 3.5c-1.2.7-2 1.5-2 3%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/%3E%3Ccircle cx=%2212%22 cy=%2219.5%22 r=%221.7%22/%3E%3C/svg%3E"); }
+
+/* builders: letters drop and stack like blocks */
+.hs-footer-mark[data-word="builders"] .hs-footer-ch { animation: hs-w-drop .5s cubic-bezier(.3, .6, .3, 1) both; animation-delay: calc(var(--i) * 70ms); }
+@keyframes hs-w-drop { from { transform: translateY(-115%); opacity: 0; } 30% { opacity: 1; } 72% { transform: translateY(5%); } 86% { transform: translateY(-3%); } }
+.hs-footer-mark[data-word="builders"] .hs-footer-glyph-ink { animation: hs-g-drop .5s cubic-bezier(.3, .6, .3, 1) .5s both; }
+@keyframes hs-g-drop { from { transform: translateY(-70%); opacity: 0; } 75% { transform: translateY(6%); } }
+
+/* dreamers: out of the blur, floating */
+.hs-footer-mark[data-word="dreamers"] .hs-footer-ch { animation: hs-w-dream 1.1s ease-out both; animation-delay: calc(var(--i) * 70ms); }
+@keyframes hs-w-dream { from { transform: translateY(22%) scale(1.08); opacity: 0; filter: blur(12px); } }
+.hs-footer-mark[data-word="dreamers"] .hs-footer-glyph-ink { animation: hs-g-float 2.6s ease-in-out infinite alternate; }
+@keyframes hs-g-float { from { transform: translateY(6%) rotate(-6deg); } to { transform: translateY(-6%) rotate(6deg); } }
+
+/* ai+humans: the machine types, the plus turns, the people ease in */
+.hs-footer-mark[data-word="ai-humans"] .hs-footer-ch[data-seg="0"] { animation: hs-w-type .01s steps(1) both; animation-delay: calc(var(--i) * 160ms); }
+.hs-footer-mark[data-word="ai-humans"] .hs-footer-ch[data-ch="plus"] { animation: hs-w-spin .5s cubic-bezier(.3, 1.4, .5, 1) .4s both; }
+.hs-footer-mark[data-word="ai-humans"] .hs-footer-ch[data-seg="1"] { animation: hs-w-dream .8s ease-out both; animation-delay: calc(.55s + var(--i) * 45ms); }
+@keyframes hs-w-type { from { opacity: 0; } }
+@keyframes hs-w-spin { from { transform: rotate(-180deg) scale(0); opacity: 0; } }
+.hs-footer-mark[data-word="ai-humans"] .hs-footer-glyph-ink { animation: hs-g-merge .9s ease-out .4s both; }
+@keyframes hs-g-merge { from { transform: scaleX(1.5); opacity: 0; } }
+
+/* never settlers: runs in and never quite stops */
+.hs-footer-mark[data-word="never-settlers"] .hs-footer-ch { animation: hs-w-dash .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i) * 22ms); }
+@keyframes hs-w-dash { from { transform: translateX(-90%) skewX(-20deg); opacity: 0; } 65% { transform: translateX(5%) skewX(-5deg); opacity: 1; } }
+.hs-footer-mark[data-word="never-settlers"] .hs-footer-word { animation: hs-w-restless 1.1s ease-in-out .8s infinite alternate; }
+@keyframes hs-w-restless { to { transform: translateX(.035em) skewX(-2deg); } }
+.hs-footer-mark[data-word="never-settlers"] .hs-footer-glyph-ink { animation: hs-g-onward .9s ease-in-out infinite; }
+@keyframes hs-g-onward { 0% { transform: translateX(-60%); opacity: 0; } 35% { opacity: 1; } 65% { opacity: 1; } 100% { transform: translateX(60%); opacity: 0; } }
+
+/* tinkerers: every letter is screwed into place */
+.hs-footer-mark[data-word="tinkerers"] .hs-footer-ch { animation: hs-w-screw .6s cubic-bezier(.3, 1.3, .5, 1) both; animation-delay: calc(var(--i) * 45ms); }
+@keyframes hs-w-screw { from { transform: rotate(-180deg) scale(.4); opacity: 0; } }
+.hs-footer-mark[data-word="tinkerers"] .hs-footer-glyph-ink { animation: hs-g-turn 5s linear infinite; }
+@keyframes hs-g-turn { to { transform: rotate(360deg); } }
+
+/* first-timers: they jump in */
+.hs-footer-mark[data-word="first-timers"] .hs-footer-ch { animation: hs-w-pop .45s cubic-bezier(.3, 1.6, .5, 1) both; animation-delay: calc(var(--i) * 40ms); }
+@keyframes hs-w-pop { from { transform: scale(0); opacity: 0; } 60% { transform: scale(1.2) translateY(-8%); } }
+.hs-footer-mark[data-word="first-timers"] .hs-footer-glyph-ink { animation: hs-g-twinkle 1.6s ease-in-out .5s infinite alternate; }
+@keyframes hs-g-twinkle { from { transform: scale(.7) rotate(0deg); } to { transform: scale(1.1) rotate(45deg); } }
+
+/* night owls: lights come on one window at a time */
+.hs-footer-mark[data-word="night-owls"] .hs-footer-ch { animation: hs-w-light .5s linear both; animation-delay: .1s; }
+.hs-footer-mark[data-word="night-owls"] .hs-footer-ch:nth-child(2n) { animation-delay: .45s; }
+.hs-footer-mark[data-word="night-owls"] .hs-footer-ch:nth-child(3n) { animation-delay: .25s; }
+.hs-footer-mark[data-word="night-owls"] .hs-footer-ch:nth-child(5n) { animation-delay: .75s; }
+@keyframes hs-w-light { from { opacity: .12; } 40% { opacity: .9; } 55% { opacity: .3; } 70% { opacity: 1; } }
+.hs-footer-mark[data-word="night-owls"] .hs-footer-glyph-ink { animation: hs-g-blink 2.4s ease-in-out .8s infinite; }
+@keyframes hs-g-blink { 0%, 44%, 56%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.12); } }
+
+/* misfits: they land crooked, and one stays that way */
+.hs-footer-mark[data-word="misfits"] .hs-footer-ch { --r: 16deg; animation: hs-w-misfit .55s cubic-bezier(.3, 1.3, .5, 1) both; animation-delay: calc(var(--i) * 50ms); }
+.hs-footer-mark[data-word="misfits"] .hs-footer-ch:nth-child(2n) { --r: -14deg; }
+.hs-footer-mark[data-word="misfits"] .hs-footer-ch:nth-child(4) { animation-name: hs-w-misfit-stays; }
+@keyframes hs-w-misfit { from { transform: translateY(-45%) rotate(var(--r)); opacity: 0; } }
+@keyframes hs-w-misfit-stays { from { transform: translateY(-45%) rotate(24deg); opacity: 0; } to { transform: translateY(3%) rotate(-9deg); } }
+.hs-footer-mark[data-word="misfits"] .hs-footer-glyph { animation-name: hs-g-in, hs-g-tilt; animation-duration: .4s, .5s; animation-delay: .25s, .7s; animation-fill-mode: both, forwards; }
+@keyframes hs-g-tilt { to { transform: rotate(-9deg); } }
+
+/* makers: printed layer by layer */
+.hs-footer-mark[data-word="makers"] .hs-footer-ch { animation: hs-w-print .5s linear both; animation-delay: calc(var(--i) * 90ms); }
+@keyframes hs-w-print { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(-10% 0 -10% 0); } }
+.hs-footer-mark[data-word="makers"] .hs-footer-glyph-ink { transform-origin: 50% 90%; animation: hs-g-hammer .5s ease-in .5s 3 alternate both; }
+@keyframes hs-g-hammer { from { transform: rotate(-40deg); } to { transform: rotate(8deg); } }
+
+/* weekend founders: calendar pages flip */
+.hs-footer-mark[data-word="weekend-founders"] .hs-footer-ch { transform-origin: 50% 0; animation: hs-w-flip .5s cubic-bezier(.3, 1.2, .5, 1) both; animation-delay: calc(var(--i) * 30ms); }
+@keyframes hs-w-flip { from { transform: perspective(300px) rotateX(-92deg); opacity: 0; } to { transform: perspective(300px) rotateX(0); } }
+.hs-footer-mark[data-word="weekend-founders"] .hs-footer-glyph-ink { transform-origin: 50% 0; animation: hs-w-flip .6s cubic-bezier(.3, 1.2, .5, 1) .6s both; }
+
+/* what-if: not sure yet */
+.hs-footer-mark[data-word="what-if"] .hs-footer-ch { animation: hs-w-flicker .8s linear both; animation-delay: calc(var(--i) * 60ms); }
+@keyframes hs-w-flicker { from { opacity: 0; } 20% { opacity: 1; } 35% { opacity: .15; } 50% { opacity: 1; } 65% { opacity: .4; } }
+.hs-footer-mark[data-word="what-if"] .hs-footer-glyph-ink { transform-origin: 50% 85%; animation: hs-g-wonder 1.4s ease-in-out infinite alternate; }
+@keyframes hs-g-wonder { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-footer-ch, .hs-footer-word, .hs-footer-glyph, .hs-footer-glyph-ink { animation: none !important; }
+}

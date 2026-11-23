@@ -129,7 +129,7 @@ Detalles pequeños que hacen que la interfaz responda. Ya están en `components/
 - **Imágenes con borde.** Fotos de avatar y portadas llevan un contorno interior del 12% de la tinta para no fundirse con el fondo.
 - **Alineación óptica.** Un botón con ícono lleva 2px menos de relleno del lado del ícono.
 - **Radios concéntricos.** Lo que va dentro de una tarjeta (`radius-md`) usa `radius-sm`; nunca el mismo radio anidado.
-- **El nombre muta solo en el pie.** En el `Footer`, "hacker" se transforma en otras palabras ("builders space", "dreamers space"…) y vuelve a juntarse en "hackerspace". En cualquier otro lugar el nombre está quieto.
+- **El nombre muta solo en el pie.** En el `Footer`, "hacker" se transforma en otras palabras ("builders space", "dreamers space"…) y vuelve a juntarse en "hackerspace". Cada palabra entra con una animación y un gráfico propios, que cuentan lo que significa. En cualquier otro lugar el nombre está quieto.
 - Todo movimiento se apaga con `prefers-reduced-motion`.
 
 ## Primitivas de UI SDK

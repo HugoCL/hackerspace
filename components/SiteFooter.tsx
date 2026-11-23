@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 
 const HOME = "hacker";
 const WORDS = [
@@ -32,8 +32,14 @@ function morphFrame(from: string, to: string, progress: number) {
   return frame;
 }
 
+type Morph = { text: string; word: string; phase: "in" | "out" | "decode" };
+
 function useMorphingWord(paused: boolean) {
-  const [text, setText] = useState(HOME);
+  const [morph, setMorph] = useState<Morph>({
+    text: HOME,
+    word: HOME,
+    phase: "in",
+  });
   const position = useRef({ index: 0, sinceHome: 0, word: HOME });
 
   useEffect(() => {
@@ -55,21 +61,34 @@ function useMorphingWord(paused: boolean) {
         state.sinceHome = 0;
       }
       state.word = to;
+
+      if (to !== HOME) {
+        setMorph((previous) => ({ ...previous, phase: "out" }));
+        timer = setTimeout(() => {
+          setMorph({ text: to, word: to, phase: "in" });
+          timer = setTimeout(next, 3200);
+        }, 220);
+        return;
+      }
+
       let start: number | null = null;
       let last = 0;
-
       function step(now: number) {
         if (!alive) return;
         start ??= now;
-        const progress = Math.min(1, (now - start) / 700);
+        const progress = Math.min(1, (now - start) / 800);
         if (progress === 1) {
-          setText(to);
-          timer = setTimeout(next, to === HOME ? 4200 : 2400);
+          setMorph({ text: HOME, word: HOME, phase: "in" });
+          timer = setTimeout(next, 4200);
           return;
         }
         if (now - last > 45) {
           last = now;
-          setText(morphFrame(from, to, progress));
+          setMorph({
+            text: morphFrame(from, HOME, progress),
+            word: HOME,
+            phase: "decode",
+          });
         }
         frame = requestAnimationFrame(step);
       }
@@ -81,32 +100,67 @@ function useMorphingWord(paused: boolean) {
       alive = false;
       clearTimeout(timer);
       cancelAnimationFrame(frame);
-      setText(state.word);
+      setMorph({ text: state.word, word: state.word, phase: "in" });
     };
   }, [paused]);
 
-  return { text, split: position.current.word !== HOME };
+  return morph;
+}
+
+// The per-word entrance and glyph live in design-system/components/bundle.css,
+// keyed by data-word. Each letter gets --i (its index) and data-seg (which
+// part of a compound word it belongs to).
+function MorphLetters({ text }: { text: string }) {
+  let segment = 0;
+  return text.split("").map((character, index) => {
+    const letter = (
+      <span
+        className="hs-footer-ch"
+        data-ch={character === "+" ? "plus" : undefined}
+        data-seg={segment}
+        // biome-ignore lint/suspicious/noArrayIndexKey: letters are positional and the whole word remounts when it changes
+        key={index}
+        style={{ "--i": index } as CSSProperties}
+      >
+        {character}
+      </span>
+    );
+    if (character === "+" || character === " " || character === "-") segment++;
+    return letter;
+  });
 }
 
 export default function SiteFooter() {
   const [paused, setPaused] = useState(false);
-  const { text, split } = useMorphingWord(paused);
+  const { text, word, phase } = useMorphingWord(paused);
+  const markClass = [
+    "hs-footer-mark",
+    word !== HOME && "hs-footer-mark--split",
+    phase === "out" && "hs-footer-mark--out",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const wordKey = phase === "decode" ? "decode" : word;
 
   return (
     <footer className="hs-footer">
       <div className="hs-footer-inner">
         <div className="hs-footer-top">
           <p
-            className={
-              split ? "hs-footer-mark hs-footer-mark--split" : "hs-footer-mark"
-            }
+            className={markClass}
             data-testid="footer-mark"
+            data-word={wordKey.replace(/[^a-z0-9]+/g, "-")}
           >
             <span className="sr-only">Hackerspace</span>
             <span aria-hidden="true">
-              <span className="hs-footer-word">{text}</span>
+              <span className="hs-footer-word" key={wordKey}>
+                <MorphLetters text={text} />
+              </span>
               <span className="hs-footer-gap" />
               space
+              <span className="hs-footer-glyph" key={`glyph-${word}`}>
+                <span className="hs-footer-glyph-ink" />
+              </span>
             </span>
           </p>
           <p className="hs-footer-tagline">

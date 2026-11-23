@@ -10,6 +10,7 @@ import {
   query,
 } from "./_generated/server";
 import { teamDetails } from "./schema";
+import { legacyLookingFor, lookingForLimit, teamSearchText } from "./teamText";
 
 async function findUser(ctx: QueryCtx | MutationCtx, identityKey: string) {
   return ctx.db
@@ -54,22 +55,22 @@ async function requireOwnedTeam(ctx: MutationCtx, teamId: Id<"teams">) {
 function normalizeDetails(details: Infer<typeof teamDetails>) {
   const name = details.name.trim();
   const description = details.description.trim();
-  const rolesWanted = [
-    ...new Set(details.rolesWanted.map((role) => role.trim()).filter(Boolean)),
-  ];
+  const lookingFor = details.lookingFor.trim();
   if (!name || name.length > 70)
     throw new ConvexError("Escribe un nombre de hasta 70 caracteres.");
   if (!description || description.length > 400)
     throw new ConvexError("Escribe una descripción de hasta 400 caracteres.");
-  if (rolesWanted.length > 8 || rolesWanted.some((role) => role.length > 40)) {
-    throw new ConvexError("Agrega hasta 8 roles de 40 caracteres cada uno.");
+  if (details.lookingFor.length > lookingForLimit) {
+    throw new ConvexError(
+      `Describe qué buscan en hasta ${lookingForLimit} caracteres.`,
+    );
   }
   return {
     ...details,
     name,
     description,
-    rolesWanted,
-    searchableRoles: rolesWanted.join(" "),
+    lookingFor,
+    searchableText: teamSearchText(name, lookingFor),
   };
 }
 
@@ -103,23 +104,23 @@ export const list = query({
   args: {
     hackathonId: v.id("hackathons"),
     recruitingOnly: v.boolean(),
-    role: v.optional(v.string()),
+    search: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (
     ctx,
-    { hackathonId, recruitingOnly, role, paginationOpts },
+    { hackathonId, recruitingOnly, search, paginationOpts },
   ) => {
     const teams = ctx.db.query("teams");
-    const roleSearch = role?.trim().slice(0, 40);
-    const page = await (roleSearch
-      ? teams.withSearchIndex("search_searchableRoles", (q) => {
-          const search = q
-            .search("searchableRoles", roleSearch)
+    const term = search?.trim().slice(0, lookingForLimit);
+    const page = await (term
+      ? teams.withSearchIndex("search_searchableText", (q) => {
+          const matches = q
+            .search("searchableText", term)
             .eq("hackathonId", hackathonId);
           return recruitingOnly
-            ? search.eq("recruitingStatus", "recruiting")
-            : search;
+            ? matches.eq("recruitingStatus", "recruiting")
+            : matches;
         })
       : (recruitingOnly
           ? teams.withIndex("by_hackathonId_and_recruitingStatus", (q) =>
@@ -134,14 +135,29 @@ export const list = query({
     ).paginate(paginationOpts);
     return {
       ...page,
-      page: page.page.map(
-        ({ _id, name, description, rolesWanted, recruitingStatus }) => ({
-          _id,
-          name,
-          description,
-          rolesWanted,
-          recruitingStatus,
-        }),
+      page: await Promise.all(
+        page.page.map(
+          async ({
+            _id,
+            name,
+            description,
+            lookingFor,
+            rolesWanted,
+            recruitingStatus,
+          }) => ({
+            _id,
+            name,
+            description,
+            recruitingStatus,
+            lookingFor: lookingFor ?? legacyLookingFor(rolesWanted),
+            memberCount: (
+              await ctx.db
+                .query("teamMembers")
+                .withIndex("by_teamId_and_userId", (q) => q.eq("teamId", _id))
+                .take(1001)
+            ).length,
+          }),
+        ),
       ),
     };
   },
@@ -174,7 +190,12 @@ export const viewerState = query({
     const team = await ctx.db.get("teams", teamId);
     if (!team) return null;
     const user = await findUser(ctx, identity.tokenIdentifier);
-    if (!user) return { kind: "visitor" as const, conversationId: null };
+    if (!user)
+      return {
+        kind: "visitor" as const,
+        conversationId: null,
+        conversationCount: null,
+      };
     const conversation = await conversationFor(ctx, teamId, user._id);
     const kind =
       team.ownerId === user._id
@@ -182,7 +203,21 @@ export const viewerState = query({
         : (await membership(ctx, teamId, user._id))
           ? "member"
           : "visitor";
-    return { kind, conversationId: conversation?._id ?? null };
+    return {
+      kind,
+      conversationId: conversation?._id ?? null,
+      conversationCount:
+        kind === "owner"
+          ? (
+              await ctx.db
+                .query("teamConversations")
+                .withIndex("by_teamId_and_updatedAt", (q) =>
+                  q.eq("teamId", teamId),
+                )
+                .take(1001)
+            ).length
+          : null,
+    };
   },
 });
 

@@ -2,6 +2,7 @@ import type { GenericId } from "convex/values";
 import type { TableNames } from "./_generated/dataModel";
 import { internalMutation, type MutationCtx } from "./_generated/server";
 import { sampleHackathons } from "./sampleHackathons";
+import { teamSearchText } from "./teamText";
 
 // Local deployments start empty, so every table needs sample data to develop against.
 //
@@ -28,16 +29,16 @@ export const seeders: Record<TableNames, Seeder> = {
       .withIndex("by_slug", (q) => q.eq("slug", "codigo-sin-fronteras"))
       .unique();
     if (!hackathon?.isSample) return false;
-    for (const [name, description, rolesWanted] of [
+    for (const [name, description, lookingFor] of [
       [
         "Punto de Encuentro",
         "Un mapa de comunidades de código abierto.",
-        ["Frontend", "Diseño"],
+        "Alguien con ojo para el diseño que convierta ideas en pantallas fáciles de explorar.",
       ],
       [
         "Ruta Abierta",
         "Una guía de contribuciones para principiantes.",
-        ["Datos", "Backend"],
+        "Alguien que disfrute ordenar datos y explicar por dónde empezar.",
       ],
     ] as const) {
       const ownerId = await ctx.db.insert("users", {
@@ -49,8 +50,8 @@ export const seeders: Record<TableNames, Seeder> = {
         ownerId,
         name,
         description,
-        rolesWanted: [...rolesWanted],
-        searchableRoles: rolesWanted.join(" "),
+        lookingFor,
+        searchableText: teamSearchText(name, lookingFor),
         recruitingStatus: "recruiting",
       });
       await ctx.db.insert("teamMembers", {

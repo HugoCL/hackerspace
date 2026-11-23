@@ -26,7 +26,7 @@ const hackathons = defineTable({
 export const teamDetails = v.object({
   name: v.string(),
   description: v.string(),
-  rolesWanted: v.array(v.string()),
+  lookingFor: v.string(),
   recruitingStatus: v.union(v.literal("recruiting"), v.literal("closed")),
 });
 export const joinRequestStatus = v.union(
@@ -44,7 +44,10 @@ export default defineSchema({
   teams: defineTable({
     hackathonId: v.id("hackathons"),
     ownerId: v.id("users"),
-    ...teamDetails.fields,
+    ...teamDetails.omit("lookingFor").fields,
+    lookingFor: v.optional(v.string()),
+    searchableText: v.optional(v.string()),
+    rolesWanted: v.optional(v.array(v.string())),
     searchableRoles: v.optional(v.string()),
   })
     .index("by_hackathonId_and_recruitingStatus", [
@@ -53,8 +56,8 @@ export default defineSchema({
     ])
     .index("by_hackathonId", ["hackathonId"])
     .index("by_ownerId", ["ownerId"])
-    .searchIndex("search_searchableRoles", {
-      searchField: "searchableRoles",
+    .searchIndex("search_searchableText", {
+      searchField: "searchableText",
       filterFields: ["hackathonId", "recruitingStatus"],
     }),
   teamMembers: defineTable({

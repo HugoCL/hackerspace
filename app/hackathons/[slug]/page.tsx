@@ -63,6 +63,7 @@ export default async function HackathonProfile({
 
   return (
     <HackathonProfileTabs
+      year={new Date().getFullYear()}
       hackathonId={event._id}
       header={
         <header className="hs-pagehead">

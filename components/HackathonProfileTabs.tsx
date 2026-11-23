@@ -21,11 +21,13 @@ export default function HackathonProfileTabs({
   header,
   overview,
   rules,
+  year,
 }: {
   hackathonId: Id<"hackathons">;
   header: ReactNode;
   overview: ReactNode;
   rules: ReactNode;
+  year: number;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -51,6 +53,7 @@ export default function HackathonProfileTabs({
 
   return (
     <AppShell
+      year={year}
       aside={
         tab === "equipos" ? undefined : (
           <section className="hs-card" aria-label="Resumen de equipos">

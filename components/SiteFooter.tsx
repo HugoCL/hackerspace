@@ -130,7 +130,7 @@ function MorphLetters({ text }: { text: string }) {
   });
 }
 
-export default function SiteFooter() {
+export default function SiteFooter({ year }: { year: number }) {
   const [paused, setPaused] = useState(false);
   const { text, word, phase } = useMorphingWord(paused);
   const markClass = [
@@ -184,7 +184,7 @@ export default function SiteFooter() {
           </div>
         </nav>
         <div className="hs-footer-base">
-          <span>© {new Date().getFullYear()} Hackerspace</span>
+          <span>© {year} Hackerspace</span>
           <button
             aria-pressed={paused}
             className="hs-footer-pause"

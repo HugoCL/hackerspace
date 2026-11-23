@@ -3,7 +3,7 @@ import { AppShell } from "@/components/hackathon-ui";
 
 export default function Home() {
   return (
-    <AppShell exploring>
+    <AppShell exploring year={new Date().getFullYear()}>
       <section className="prototype-hero">
         <div className="hs-pagehead-text">
           <h1 className="hs-pagehead-title">Hackathones cerca de ti</h1>

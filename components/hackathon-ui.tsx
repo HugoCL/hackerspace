@@ -39,10 +39,12 @@ export function AppShell({
   children,
   aside,
   exploring = false,
+  year,
 }: {
   children: ReactNode;
   aside?: ReactNode;
   exploring?: boolean;
+  year: number;
 }) {
   return (
     <div className="hs-shell">
@@ -74,7 +76,7 @@ export function AppShell({
           <aside className="hs-shell-aside prototype-aside">{aside}</aside>
         )}
       </div>
-      <SiteFooter />
+      <SiteFooter year={year} />
     </div>
   );
 }

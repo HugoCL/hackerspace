@@ -1,16 +1,22 @@
 import { Button } from "@ui-sdk/react/button";
+import { fetchQuery } from "convex/nextjs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import HackathonPresence from "@/components/HackathonPresence";
 import { AppShell, EventMeta, ModalityBadge } from "@/components/hackathon-ui";
-import { type SampleEvent, sampleEvents } from "../sample-events";
+import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
 
-const sampleViewers = ["AM", "CR", "LS", "VP"];
 const sampleTeams = [
   { name: "Punto de Encuentro", roles: ["Frontend", "Diseño"] },
   { name: "Ruta Abierta", roles: ["Datos", "Backend"] },
 ];
 
-function ProfileSidebar({ event }: { event: SampleEvent }) {
+function ProfileSidebar({ event }: { event: Doc<"hackathons"> }) {
+  const officialUrl =
+    event.officialUrl && /^https?:\/\//i.test(event.officialUrl)
+      ? event.officialUrl
+      : undefined;
   return (
     <>
       <section aria-labelledby="event-facts" className="hs-card">
@@ -19,45 +25,33 @@ function ProfileSidebar({ event }: { event: SampleEvent }) {
         </h2>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
           <dt className="text-muted-foreground">Fechas</dt>
-          <dd className="text-right">{event.dates}</dd>
+          <dd className="text-right">{event.dates ?? "Por confirmar"}</dd>
           <dt className="text-muted-foreground">Lugar</dt>
-          <dd className="text-right">{event.location}</dd>
+          <dd className="text-right">
+            {event.location ??
+              (event.modality === "virtual" ? "En línea" : "Por confirmar")}
+          </dd>
           <dt className="text-muted-foreground">Modalidad</dt>
           <dd className="text-right">
             <ModalityBadge modality={event.modality} />
           </dd>
         </dl>
-        <p className="hs-pagehead-desc text-sm">
-          Sin sitio oficial. Evento ficticio.
-        </p>
+        {officialUrl ? (
+          <a className="hs-link" href={officialUrl}>
+            Sitio oficial
+          </a>
+        ) : (
+          <p className="hs-pagehead-desc text-sm">
+            {event.isSample
+              ? "Sin sitio oficial. Evento ficticio."
+              : "Sitio oficial no disponible."}
+          </p>
+        )}
         <Button className="hs-btn hs-btn--primary" render={<a href="#bases" />}>
           Ver bases
         </Button>
       </section>
-      <section aria-labelledby="sample-presence" className="hs-card">
-        <div className="hs-section-head">
-          <h2 className="hs-section-title" id="sample-presence">
-            Viendo ahora
-          </h2>
-          <span className="hs-badge hs-badge--neutral">Simulación</span>
-        </div>
-        <div className="hs-avstack">
-          <span aria-hidden="true" className="hs-avstack-faces">
-            {sampleViewers.map((initials, tone) => (
-              <span
-                className={`hs-avatar hs-avatar--sm hs-avatar--t${tone}`}
-                key={initials}
-              >
-                {initials}
-              </span>
-            ))}
-          </span>
-          <span className="hs-avstack-more">8 personas</span>
-        </div>
-        <p className="hs-pagehead-desc text-sm">
-          No refleja actividad en vivo.
-        </p>
-      </section>
+      <HackathonPresence hackathonId={event._id} />
       <section aria-labelledby="sample-teams" className="hs-card">
         <h2 className="hs-section-title" id="sample-teams">
           Equipos buscando gente
@@ -89,7 +83,7 @@ export default async function HackathonProfile({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const event = sampleEvents.find((sample) => sample.slug === slug);
+  const event = await fetchQuery(api.hackathons.bySlug, { slug });
   if (!event) notFound();
 
   return (
@@ -105,7 +99,11 @@ export default async function HackathonProfile({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="hs-pagehead-title">{event.title}</h1>
-            <span className="hs-badge hs-badge--neutral">Datos de muestra</span>
+            {event.isSample && (
+              <span className="hs-badge hs-badge--neutral">
+                Datos de muestra
+              </span>
+            )}
           </div>
           <div className="min-[901px]:hidden">
             <div className="hs-pagehead-meta">
@@ -137,9 +135,9 @@ export default async function HackathonProfile({
         </h2>
         <div className="hs-card">
           <h3 className="hs-hcard-title">Bases</h3>
-          <p>{event.guidelines}</p>
+          <p>{event.guidelines ?? "Bases no disponibles."}</p>
           <h3 className="hs-hcard-title">Reglas</h3>
-          <p>{event.rules}</p>
+          <p>{event.rules ?? "Reglas no disponibles."}</p>
         </div>
       </section>
     </AppShell>

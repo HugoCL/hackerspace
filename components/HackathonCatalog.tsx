@@ -6,8 +6,8 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from "@ui-sdk/react/tabs";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { useState } from "react";
-import type { SampleEvent } from "@/app/hackathons/sample-events";
 import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
 import { EventMeta, Icon, ModalityBadge } from "./hackathon-ui";
 
 const modalities = [
@@ -19,7 +19,7 @@ function searchText(value: string) {
   return value.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase("es");
 }
 
-function CatalogCard({ event }: { event: SampleEvent }) {
+function CatalogCard({ event }: { event: Doc<"hackathons"> }) {
   return (
     <Link
       className="hs-card hs-card--interactive hs-hcard"
@@ -47,16 +47,15 @@ function CatalogCard({ event }: { event: SampleEvent }) {
   );
 }
 
-export default function HackathonCatalog({
-  events,
-}: {
-  events: readonly SampleEvent[];
-}) {
+export default function HackathonCatalog() {
   const [query, setQuery] = useState("");
   const status = useQuery(api.health.status, {});
+  const events = useQuery(api.hackathons.list, {
+    today: new Date().toISOString().slice(0, 10),
+  });
   const term = searchText(query.trim());
-  const matches = events.filter((event) =>
-    [event.title, event.location, ...event.topics].some((value) =>
+  const matches = events?.filter((event) =>
+    [event.title, event.location ?? "", ...event.topics].some((value) =>
       searchText(value).includes(term),
     ),
   );
@@ -86,17 +85,21 @@ export default function HackathonCatalog({
           ))}
         </TabsList>
         {modalities.map(({ value }) => {
-          const results = matches.filter((event) => event.modality === value);
+          const results = matches?.filter(
+            (event) => event.modality === value || event.modality === "hybrid",
+          );
           return (
             <TabsPanel className="prototype-panel" key={value} value={value}>
               <section className="hs-section">
                 <h2 className="hs-section-title">
                   Próximas hackathones{" "}
                   <span aria-live="polite" className="hs-section-count">
-                    {results.length}
+                    {results?.length}
                   </span>
                 </h2>
-                {results.length ? (
+                {!results ? (
+                  <p role="status">Cargando hackathones…</p>
+                ) : results.length ? (
                   <div className="hs-grid prototype-grid">
                     {results.map((event) => (
                       <CatalogCard event={event} key={event.slug} />

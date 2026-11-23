@@ -8,9 +8,12 @@
  * @module
  */
 
+import type * as hackathons from "../hackathons.js";
 import type * as health from "../health.js";
 import type * as jobs from "../jobs.js";
 import type * as migrations from "../migrations.js";
+import type * as presence from "../presence.js";
+import type * as sampleHackathons from "../sampleHackathons.js";
 import type * as seed from "../seed.js";
 
 import type {
@@ -20,9 +23,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  hackathons: typeof hackathons;
   health: typeof health;
   jobs: typeof jobs;
   migrations: typeof migrations;
+  presence: typeof presence;
+  sampleHackathons: typeof sampleHackathons;
   seed: typeof seed;
 }>;
 

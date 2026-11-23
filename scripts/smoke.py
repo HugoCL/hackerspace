@@ -101,9 +101,12 @@ def check():
                     "Conexión activa", timeout=60_000
                 )
                 expect(page.get_by_role("heading", name="Santiago Hacks 2027")).to_be_visible()
+                search = page.get_by_role("searchbox", name="Buscar hackathones")
+                search.fill("santiago")
+                expect(page.get_by_role("heading", name="Santiago Hacks 2027")).to_be_visible()
+                expect(page.get_by_role("heading", name="Hack Puerto")).not_to_be_visible()
                 page.get_by_role("tab", name="Virtuales").click()
                 expect(page.get_by_role("heading", name="Santiago Hacks 2027")).not_to_be_visible()
-                search = page.get_by_role("searchbox", name="Buscar hackathones")
                 search.fill("codigo")
                 expect(page.get_by_role("heading", name="Código sin Fronteras")).to_be_visible()
                 search.fill("evento inexistente")
@@ -117,9 +120,10 @@ def check():
                 expect(sidebar.get_by_role("region", name="Datos del evento")).to_contain_text(
                     "En línea"
                 )
-                expect(sidebar.get_by_role("region", name="Viendo ahora")).to_contain_text(
-                    "Simulación"
-                )
+                presence = sidebar.get_by_role("region", name="Viendo ahora")
+                count = presence.locator("[aria-live=polite]")
+                expect(count).to_have_text("1 persona")
+                expect(presence.get_by_role("list")).to_have_count(0)
                 expect(
                     sidebar.get_by_role("region", name="Equipos buscando gente").get_by_role(
                         "listitem"
@@ -127,6 +131,26 @@ def check():
                 ).to_have_count(2)
                 page.get_by_role("link", name="Ver bases", exact=True).click()
                 expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras#bases")
+                navigations = []
+                page.on(
+                    "framenavigated",
+                    lambda frame: navigations.append(frame.url) if frame == page.main_frame else None,
+                )
+                other_context = browser.new_context(viewport={"width": 390, "height": 844})
+                try:
+                    other_page = other_context.new_page()
+                    other_page.on("pageerror", lambda err: page_errors.append(str(err)))
+                    other_page.goto(page.url, wait_until="domcontentloaded")
+                    expect(count).to_have_text("2 personas")
+                    presence.screenshot(path=str(ARTIFACTS / "presence-two-viewers.png"))
+                    other_presence = other_page.get_by_role("region", name="Viendo ahora")
+                    expect(other_presence.locator("[aria-live=polite]")).to_have_text("2 personas")
+                    other_presence.screenshot(path=str(ARTIFACTS / "presence-mobile.png"))
+                finally:
+                    other_context.close()
+                expect(count).to_have_text("1 persona", timeout=20_000)
+                assert not navigations, f"Presence updated after navigation: {navigations}"
+                presence.screenshot(path=str(ARTIFACTS / "presence-after-close.png"))
             finally:
                 # Always keep the screenshot, and never let a failure here hide the real error.
                 try:
@@ -139,7 +163,8 @@ def check():
         print("FAIL: uncaught page errors", *page_errors, sep="\n  ")
         return 1
     print(
-        f"PASS: {URL} connected to Convex, filtered events and opened a hackathon profile, "
+        f"PASS: {URL} connected to Convex, filtered events and opened a hackathon profile; "
+        "live viewer count changed 1 → 2 → 1 without reloading; "
         "screenshot at artifacts/smoke.png"
     )
     return 0

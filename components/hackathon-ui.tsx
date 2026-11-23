@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { SampleEvent } from "@/app/hackathons/sample-events";
+import type { Doc } from "@/convex/_generated/dataModel";
 
 const iconPaths = {
   arrow: "M4 12h15m-6-6 6 6-6 6",
@@ -73,27 +73,34 @@ export function AppShell({
   );
 }
 
-export function ModalityBadge({ modality }: Pick<SampleEvent, "modality">) {
+export function ModalityBadge({
+  modality,
+}: Pick<Doc<"hackathons">, "modality">) {
   const virtual = modality === "virtual";
 
   return (
     <span
       className={`hs-badge hs-badge--${virtual ? "virtual" : "presencial"}`}
     >
-      {virtual ? "Virtual" : "Presencial"}
+      {virtual ? "Virtual" : modality === "hybrid" ? "Híbrida" : "Presencial"}
     </span>
   );
 }
 
-export function EventMeta({ event }: { event: SampleEvent }) {
+export function EventMeta({
+  event,
+}: {
+  event: Pick<Doc<"hackathons">, "dates" | "modality" | "location">;
+}) {
   return (
     <>
       <span className="prototype-meta-item">
-        <Icon name="calendar" /> {event.dates}
+        <Icon name="calendar" /> {event.dates ?? "Fechas por confirmar"}
       </span>
       <span className="prototype-meta-item">
         <Icon name={event.modality === "virtual" ? "globe" : "pin"} />{" "}
-        {event.location}
+        {event.location ??
+          (event.modality === "virtual" ? "En línea" : "Lugar por confirmar")}
       </span>
     </>
   );

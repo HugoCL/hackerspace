@@ -353,6 +353,19 @@ def check():
                 from smoke_chat import check_chat
 
                 check_chat(browser, URL, owner, applicant)
+            empty_catalog = browser.new_page()
+            empty_catalog.clock.set_fixed_time("2030-01-01T12:00:00Z")
+            empty_catalog.goto(URL, wait_until="domcontentloaded")
+            expect(empty_catalog.get_by_test_id("connection-status")).to_have_text(
+                "Conexión activa"
+            )
+            expect(empty_catalog.get_by_role(
+                "heading", name="Todavía no hay hackathones próximas"
+            )).to_be_visible()
+            expect(empty_catalog.locator(".hs-hcard")).to_have_count(0)
+            expect(empty_catalog.get_by_role("button", name="Limpiar búsqueda")).to_have_count(0)
+            expect(empty_catalog.get_by_text("Datos de muestra", exact=True)).to_have_count(0)
+            print("PASS: an empty upcoming catalog shows an empty state, not sample fixtures or a search reset")
         finally:
             browser.close()
     if page_errors:

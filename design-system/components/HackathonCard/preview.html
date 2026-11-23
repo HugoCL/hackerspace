@@ -1,0 +1,16 @@
+<!-- @dsCard group="Cards" height=300 width=720 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>HackathonCard</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Grid,{min:280},
+    h(H.HackathonCard,{href:'#',mode:'presencial',title:'Santiago Hacks 2027',dates:'14–16 mar',location:'Santiago, Chile',viewers:23,description:'48 horas para construir con IA y datos abiertos de la ciudad.',tags:['IA','Datos abiertos','Ciudad'],teamsLooking:12}),
+    h(H.HackathonCard,{href:'#',mode:'virtual',title:'Andes Climate Jam',dates:'2–4 abr',location:'Online · UTC−3',viewers:4,description:'Soluciones para el agua y la energía en la región andina.',tags:['Clima','Hardware'],teamsLooking:3,source:'scout'})));
+</script>
+</body>
+</html>

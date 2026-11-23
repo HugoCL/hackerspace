@@ -1,0 +1,94 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hackerspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600&family=Geist:wght@400&display=swap">
+<style>
+  html, body { margin:0; height:100%; }
+  body { background:var(--ui-background); color:var(--ui-foreground); font-family:var(--font-sans); overflow:hidden; }
+  .cover { position:relative; height:288px; overflow:hidden; }
+  .art { position:absolute; top:0; left:480px; width:480px; height:288px; overflow:hidden; }
+  .art svg { display:block; width:480px; height:288px; }
+  .signal { fill:var(--hs-signal); }
+  .ink { fill:var(--ui-foreground); }
+  .livefill { fill:var(--hs-live); }
+  .blk { rx:var(--radius-md); }
+  .dot { fill:var(--ui-background); }
+  .dot.live { fill:var(--hs-live); }
+  .seat { fill:var(--hs-signal-ink); }
+  .words { position:absolute; left:var(--space-6); bottom:var(--space-6); max-width:440px; }
+  .name { margin:0; font-family:var(--font-display); font-size:64px; line-height:.92; font-weight:600; letter-spacing:-.02em; color:var(--ui-foreground); }
+  .tag { margin:var(--space-2) 0 0 2px; font-size:14px; line-height:20px; color:var(--ui-muted-foreground); }
+</style>
+</head>
+<body>
+<div class="cover">
+<div class="art" aria-hidden="true">
+<svg viewBox="0 0 480 288" width="480" height="288">
+<!--
+  blocks      hs-signal 176×272 bled off the top (the brand lime, largest) · ui-foreground 272×216 bleeding off the right (ink) · hs-live 96×24 pill once (it means "now") — ≈30% of 960×288
+  arrangement one tall lime slab beside an ink block, bottoms on one line space-6 above the edge, space-4 gutter; the live pill floats above the ink block
+  pattern     discs, from "Lo redondo es una persona": a seat grid of radius-full discs at a space-8 (2×space-4) pitch cut out of the ink block in ui-background, six lit in hs-live (people watching now), a few empty seats; three hs-signal-ink discs on the slab
+  scales      sides in space-4/space-6 multiples; gutter space-4; pitch 32 = 2×space-4; corners radius-md; pill and discs radius-full (half the short side)
+-->
+<rect class="signal blk" x="16" y="-16" width="176" height="280" rx="8"/>
+<rect class="ink blk" x="208" y="48" width="288" height="216" rx="8"/>
+<rect class="livefill" x="208" y="12" width="96" height="24" rx="12"/>
+<circle class="seat" cx="48" cy="232" r="8"/>
+<circle class="seat" cx="80" cy="232" r="8"/>
+<circle class="seat" cx="112" cy="232" r="8"/>
+<circle class="dot" cx="272" cy="80" r="8"/>
+<circle class="dot" cx="304" cy="80" r="8"/>
+<circle class="dot" cx="336" cy="80" r="8"/>
+<circle class="dot" cx="368" cy="80" r="8"/>
+<circle class="dot" cx="400" cy="80" r="8"/>
+<circle class="dot" cx="432" cy="80" r="8"/>
+<circle class="dot live" cx="464" cy="80" r="8"/>
+<circle class="dot" cx="240" cy="112" r="8"/>
+<circle class="dot" cx="272" cy="112" r="8"/>
+<circle class="dot live" cx="304" cy="112" r="8"/>
+<circle class="dot" cx="336" cy="112" r="8"/>
+<circle class="dot" cx="368" cy="112" r="8"/>
+<circle class="dot" cx="400" cy="112" r="8"/>
+<circle class="dot" cx="432" cy="112" r="8"/>
+<circle class="dot" cx="464" cy="112" r="8"/>
+<circle class="dot" cx="240" cy="144" r="8"/>
+<circle class="dot" cx="272" cy="144" r="8"/>
+<circle class="dot" cx="304" cy="144" r="8"/>
+<circle class="dot" cx="336" cy="144" r="8"/>
+<circle class="dot" cx="368" cy="144" r="8"/>
+<circle class="dot live" cx="400" cy="144" r="8"/>
+<circle class="dot" cx="432" cy="144" r="8"/>
+<circle class="dot" cx="464" cy="144" r="8"/>
+<circle class="dot" cx="240" cy="176" r="8"/>
+<circle class="dot live" cx="272" cy="176" r="8"/>
+<circle class="dot" cx="304" cy="176" r="8"/>
+<circle class="dot" cx="336" cy="176" r="8"/>
+<circle class="dot" cx="368" cy="176" r="8"/>
+<circle class="dot" cx="400" cy="176" r="8"/>
+<circle class="dot" cx="432" cy="176" r="8"/>
+<circle class="dot" cx="464" cy="176" r="8"/>
+<circle class="dot" cx="272" cy="208" r="8"/>
+<circle class="dot" cx="304" cy="208" r="8"/>
+<circle class="dot" cx="336" cy="208" r="8"/>
+<circle class="dot live" cx="368" cy="208" r="8"/>
+<circle class="dot" cx="400" cy="208" r="8"/>
+<circle class="dot" cx="432" cy="208" r="8"/>
+<circle class="dot" cx="464" cy="208" r="8"/>
+<circle class="dot" cx="336" cy="240" r="8"/>
+<circle class="dot" cx="368" cy="240" r="8"/>
+<circle class="dot" cx="400" cy="240" r="8"/>
+<circle class="dot live" cx="432" cy="240" r="8"/>
+<circle class="dot" cx="464" cy="240" r="8"/>
+</svg>
+</div>
+<div class="words">
+<h1 class="name">Hackerspace</h1>
+<p class="tag">Hackathones, equipos y proyectos — en vivo.</p>
+</div>
+</div>
+</body>
+</html>

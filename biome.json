@@ -13,7 +13,8 @@
       "!**/skills-lock.json",
       "!**/licenses",
       "!**/docs/skills.md",
-      "!**/*.md"
+      "!**/*.md",
+      "!**/design-system"
     ]
   },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2 },

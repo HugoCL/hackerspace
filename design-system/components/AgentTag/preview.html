@@ -1,0 +1,14 @@
+<!-- @dsCard group="Live" height=80 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>AgentTag</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{direction:'row',gap:4,align:'center',wrap:true}, h(H.AgentTag,{name:'scout',title:'Encontrado en devpost.com'}), h(H.AgentTag,{name:'de Camila'}), h(H.AgentTag,null)));
+</script>
+</body>
+</html>

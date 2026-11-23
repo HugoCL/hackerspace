@@ -1,0 +1,16 @@
+<!-- @dsCard group="Cards" height=300 width=720 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>TeamCard</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Grid,{min:300},
+    h(H.TeamCard,{name:'Los Compiladores',hackathon:'Santiago Hacks 2027',pitch:'Un asistente que lee los datos de transporte y te dice cuándo salir.',lookingFor:['Frontend','Diseño'],members:[{name:'Camila Rojas',online:true},{name:'Diego Muñoz'}],size:4,activeNow:true,action:h(H.Button,{variant:'signal',size:'sm'},'Postular')}),
+    h(H.TeamCard,{name:'Agua Clara',hackathon:'Andes Climate Jam',pitch:'Sensores baratos para medir calidad del agua en zonas rurales.',lookingFor:['Hardware'],members:['Ana Pérez','Tomás Vera','Sofía Lagos'],size:4,action:h(H.Button,{size:'sm'},'Ver equipo')})));
+</script>
+</body>
+</html>

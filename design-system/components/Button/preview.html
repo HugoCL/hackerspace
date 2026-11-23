@@ -1,0 +1,23 @@
+<!-- @dsCard group="Actions" height=150 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Button</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{gap:4},
+    h(H.Stack,{direction:'row',gap:2,wrap:true,align:'center'},
+      h(H.Button,{variant:'primary'},'Inscribirme'),
+      h(H.Button,{variant:'signal',icon:'users'},'Busco equipo'),
+      h(H.Button,null,'Ver bases'),
+      h(H.Button,{variant:'ghost',iconEnd:'arrow'},'Ver todos'),
+      h(H.Button,{variant:'danger'},'Salir del equipo')),
+    h(H.Stack,{direction:'row',gap:2,align:'center'},
+      h(H.Button,{size:'sm'},'Pequeño'), h(H.Button,{size:'lg',variant:'primary'},'Grande'),
+      h(H.Button,{'aria-label':'Agregar',icon:'plus'}), h(H.Button,{disabled:true},'Deshabilitado'))));
+</script>
+</body>
+</html>

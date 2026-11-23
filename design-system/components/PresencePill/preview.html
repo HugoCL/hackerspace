@@ -1,0 +1,16 @@
+<!-- @dsCard group="Live" height=100 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>PresencePill</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+var p=['Camila Rojas','Diego Muñoz','Ana Pérez'];
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{direction:'row',gap:4,align:'center',wrap:true},
+    h(H.PresencePill,{count:23,people:p}), h(H.PresencePill,{count:148}), h(H.PresencePill,{count:7,size:'sm',live:false}), h(H.PresencePill,{count:4,label:'editando',live:false})));
+</script>
+</body>
+</html>

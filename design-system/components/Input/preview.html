@@ -1,0 +1,17 @@
+<!-- @dsCard group="Forms" height=190 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Input</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{gap:4,style:{maxWidth:360}},
+    h(H.Input,{icon:'search','aria-label':'Buscar',placeholder:'Buscar hackathones, equipos, proyectos'}),
+    h(H.Input,{label:'Ciudad',placeholder:'Santiago, Valparaíso…',hint:'Te mostramos primero lo presencial cerca.'}),
+    h(H.Input,{label:'Sitio oficial',defaultValue:'hackathon.cl',error:'Escribe una URL que empiece con https://'})));
+</script>
+</body>
+</html>

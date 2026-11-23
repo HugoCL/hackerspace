@@ -21,5 +21,6 @@ pnpm smoke      # Playwright; inicia el servidor si no está corriendo
 
 - [`AGENTS.md`](AGENTS.md): stack, comandos y skills por fase.
 - [`GLOSSARY.md`](GLOSSARY.md): vocabulario del producto.
+- [`design-system/`](design-system/README.md): marca, tokens (`tokens.json`, `tokens.css`), guías de layouts y vistas, y 23 componentes de referencia con su preview.
 - [`docs/capy.md`](docs/capy.md): configuración de Capy.
 - [`docs/skills.md`](docs/skills.md): catálogo completo de skills.

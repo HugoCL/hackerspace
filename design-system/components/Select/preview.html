@@ -1,0 +1,16 @@
+<!-- @dsCard group="Forms" height=100 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Select</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{direction:'row',gap:4,style:{maxWidth:520}},
+    h(H.Select,{label:'Modalidad',options:['Todas','Presencial','Virtual']}),
+    h(H.Select,{label:'Fecha',options:['Cualquier fecha','Este mes','Próximos 3 meses']})));
+</script>
+</body>
+</html>

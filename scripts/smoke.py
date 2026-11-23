@@ -85,6 +85,49 @@ def bootstrap(with_deps=False):
     STAMP.write_text(requirements_hash() + "\n")
 
 
+def check_footer_motion(browser):
+    from playwright.sync_api import expect
+
+    page = browser.new_page(reduced_motion="no-preference")
+    try:
+        page.clock.install()
+        page.goto(URL, wait_until="domcontentloaded")
+        footer = page.locator(".hs-footer")
+        mark = footer.locator(".hs-footer-mark")
+        pause = footer.get_by_role("button", name="Pausar animación")
+        expect(pause).to_be_visible()
+        page.clock.run_for(6_800)
+        expect(mark).to_have_attribute("data-word", "dreamers")
+        assert footer.evaluate(
+            """footer => footer.getAnimations({subtree: true}).some(
+                animation => animation.effect.getTiming().iterations === Infinity
+            )"""
+        ), "Expected a looping word effect before pausing"
+        pause.press("Enter")
+        expect(footer).to_have_attribute("data-paused", "true")
+        page.clock.run_for(4_500)
+        expect(mark).to_have_attribute("data-word", "dreamers")
+        expect(mark.locator(".hs-footer-word")).to_have_text("dreamers")
+        expect(mark.locator(".hs-footer-ch").first).to_have_css("opacity", "1")
+        assert footer.evaluate("el => el.getAnimations({subtree: true}).length") == 0
+        footer.get_by_role("button", name="Reanudar animación").press("Enter")
+        expect(footer).not_to_have_attribute("data-paused", "true")
+        page.clock.run_for(1_430)
+        page.emulate_media(reduced_motion="reduce")
+        expect(footer).to_have_attribute("data-paused", "true")
+        word = mark.get_attribute("data-word")
+        page.clock.run_for(4_500)
+        expect(mark).to_have_attribute("data-word", word)
+        assert footer.evaluate("el => el.getAnimations({subtree: true}).length") == 0
+        page.emulate_media(reduced_motion="no-preference")
+        expect(footer).not_to_have_attribute("data-paused", "true")
+        page.clock.run_for(2_000)
+        expect(mark).not_to_have_attribute("data-word", word)
+        print("PASS: footer pause and live reduced-motion changes stop word rotation and CSS effects")
+    finally:
+        page.close()
+
+
 def check():
     from playwright.sync_api import expect, sync_playwright
 
@@ -93,6 +136,7 @@ def check():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         try:
+            check_footer_motion(browser)
             page = browser.new_page()
             page.clock.set_fixed_time(CATALOG_DATE)
             page.on("pageerror", lambda err: page_errors.append(str(err)))

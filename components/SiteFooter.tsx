@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@ui-sdk/react/button";
 import Link from "next/link";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 
@@ -34,6 +35,18 @@ function morphFrame(from: string, to: string, progress: number) {
 
 type Morph = { text: string; word: string; phase: "in" | "out" | "decode" };
 
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(preference.matches);
+    preference.addEventListener("change", update);
+    update();
+    return () => preference.removeEventListener("change", update);
+  }, []);
+  return reduced;
+}
+
 function useMorphingWord(paused: boolean) {
   const [morph, setMorph] = useState<Morph>({
     text: HOME,
@@ -44,7 +57,6 @@ function useMorphingWord(paused: boolean) {
 
   useEffect(() => {
     if (paused) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const state = position.current;
     let timer: ReturnType<typeof setTimeout>;
     let frame = 0;
@@ -60,17 +72,17 @@ function useMorphingWord(paused: boolean) {
       } else {
         state.sinceHome = 0;
       }
-      state.word = to;
-
       if (to !== HOME) {
         setMorph((previous) => ({ ...previous, phase: "out" }));
         timer = setTimeout(() => {
+          state.word = to;
           setMorph({ text: to, word: to, phase: "in" });
           timer = setTimeout(next, 3200);
         }, 220);
         return;
       }
 
+      state.word = HOME;
       let start: number | null = null;
       let last = 0;
       function step(now: number) {
@@ -132,7 +144,12 @@ function MorphLetters({ text }: { text: string }) {
 
 export default function SiteFooter({ year }: { year: number }) {
   const [paused, setPaused] = useState(false);
-  const { text, word, phase } = useMorphingWord(paused);
+  const reduced = useReducedMotion();
+  const still = paused || reduced;
+  const morph = useMorphingWord(still);
+  const { word } = morph;
+  const phase = still ? "in" : morph.phase;
+  const text = still ? word : morph.text;
   const markClass = [
     "hs-footer-mark",
     word !== HOME && "hs-footer-mark--split",
@@ -143,7 +160,7 @@ export default function SiteFooter({ year }: { year: number }) {
   const wordKey = phase === "decode" ? "decode" : word;
 
   return (
-    <footer className="hs-footer">
+    <footer className="hs-footer" data-paused={still || undefined}>
       <div className="hs-footer-inner">
         <div className="hs-footer-top">
           <p
@@ -185,14 +202,16 @@ export default function SiteFooter({ year }: { year: number }) {
         </nav>
         <div className="hs-footer-base">
           <span>© {year} Hackerspace</span>
-          <button
-            aria-pressed={paused}
-            className="hs-footer-pause"
-            onClick={() => setPaused((value) => !value)}
-            type="button"
-          >
-            {paused ? "Reanudar animación" : "Pausar animación"}
-          </button>
+          {!reduced && (
+            <Button
+              aria-pressed={paused}
+              className="hs-footer-pause"
+              onClick={() => setPaused((value) => !value)}
+              type="button"
+            >
+              {paused ? "Reanudar animación" : "Pausar animación"}
+            </Button>
+          )}
         </div>
       </div>
     </footer>

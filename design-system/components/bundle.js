@@ -660,21 +660,22 @@
     var st = React.useState({ text: home, word: home, phase: 'in' });
     var pos = React.useRef({ i: 0, n: 0, word: home });
     React.useEffect(function () {
-      if (paused) return;
+      if (paused || !words.length) return;
       var timer, raf, alive = true;
       function next() {
         var s = pos.current, from = s.word, to;
         if (from !== home && s.n >= every) { to = home; s.n = 0; }
         else { to = words[s.i % words.length]; s.i++; s.n++; }
-        s.word = to;
         if (to !== home) {
           st[1](function (prev) { return { text: prev.text, word: prev.word, phase: 'out' }; });
           timer = setTimeout(function () {
+            s.word = to;
             st[1]({ text: to, word: to, phase: 'in' });
             timer = setTimeout(next, 3200);
           }, 220);
           return;
         }
+        s.word = home;
         var start = null, last = 0;
         function step(t) {
           if (!alive) return;
@@ -691,7 +692,7 @@
         alive = false; clearTimeout(timer); cancelAnimationFrame(raf);
         st[1]({ text: pos.current.word, word: pos.current.word, phase: 'in' });
       };
-    }, [paused]);
+    }, [paused, words, home, every]);
     return st[0];
   }
   function morphLetters(text) {
@@ -702,17 +703,28 @@
       return el;
     });
   }
-  function prefersReducedMotion() {
-    return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function useReducedMotion() {
+    var reduced = React.useState(false);
+    React.useEffect(function () {
+      if (typeof window.matchMedia !== 'function') return;
+      var preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+      function update() { reduced[1](preference.matches); }
+      preference.addEventListener('change', update);
+      update();
+      return function () { preference.removeEventListener('change', update); };
+    }, []);
+    return reduced[0];
   }
 
   function Footer(props) {
-    var reduced = React.useState(prefersReducedMotion)[0];
+    var reduced = useReducedMotion();
     var pausedSt = React.useState(false);
     var words = props.words || MORPH_WORDS;
-    var still = props.animate === false || reduced;
-    var m = useMorph(words, { home: 'hacker', joinEvery: props.joinEvery || 3, paused: still || pausedSt[0] });
-    return h('footer', { className: cx('hs-footer', props.className) },
+    var disabled = props.animate === false || reduced || !words.length;
+    var still = disabled || pausedSt[0];
+    var m = useMorph(words, { home: 'hacker', joinEvery: props.joinEvery || 3, paused: still });
+    if (still) m = { text: m.word, word: m.word, phase: 'in' };
+    return h('footer', { className: cx('hs-footer', props.className), 'data-paused': still || undefined },
       h('div', { className: 'hs-footer-inner' },
         h('div', { className: 'hs-footer-top' },
           h('p', {
@@ -735,7 +747,7 @@
           })) : null,
         h('div', { className: 'hs-footer-base' },
           h('span', null, props.note || '© ' + new Date().getFullYear() + ' Hackerspace'),
-          still ? null : h('button', { type: 'button', className: 'hs-footer-pause', 'aria-pressed': pausedSt[0], onClick: function () { pausedSt[1](!pausedSt[0]); } },
+          disabled ? null : h('button', { type: 'button', className: 'hs-footer-pause', 'aria-pressed': pausedSt[0], onClick: function () { pausedSt[1](function (value) { return !value; }); } },
             pausedSt[0] ? 'Reanudar animación' : 'Pausar animación'))));
   }
 

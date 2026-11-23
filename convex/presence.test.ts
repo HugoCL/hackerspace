@@ -58,6 +58,10 @@ it("counts visitors without exposing them and deduplicates tabs by verified acco
     expect(reloaded.sessionToken).not.toBe(anonymous.sessionToken);
     expect(anonymous.roomToken).toBe(tabOne.roomToken);
     const listArgs = { roomToken: tabOne.roomToken };
+    await expect(t.query(api.presence.count, { hackathonId })).resolves.toBe(2);
+    await expect(
+      t.query(api.presence.count, { hackathonId: otherId }),
+    ).resolves.toBe(1);
     await expect(t.query(api.presence.list, listArgs)).resolves.toEqual({
       count: 2,
     });
@@ -111,6 +115,7 @@ it("stops counting a session that stops sending heartbeats", async () => {
     await expect(t.query(api.presence.list, { roomToken })).resolves.toEqual({
       count: 0,
     });
+    await expect(t.query(api.presence.count, { hackathonId })).resolves.toBe(0);
   } finally {
     vi.useRealTimers();
   }

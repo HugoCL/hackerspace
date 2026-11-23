@@ -87,3 +87,17 @@ export const disconnect = mutation({
   returns: v.null(),
   handler: (ctx, { sessionToken }) => presence.disconnect(ctx, sessionToken),
 });
+
+export const count = query({
+  args: { hackathonId: v.id("hackathons") },
+  returns: v.number(),
+  handler: async (ctx, { hackathonId }) =>
+    (
+      await presence.listRoom(
+        ctx,
+        `hackathon:${hackathonId}`,
+        true,
+        countLimit + 1,
+      )
+    ).length,
+});

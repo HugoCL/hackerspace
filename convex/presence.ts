@@ -6,16 +6,21 @@ import { mutation, query } from "./_generated/server";
 const presence = new Presence(components.presence);
 const heartbeatMs = 5000;
 const countLimit = 1000;
+const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const viewerDetails = v.object({
   name: v.string(),
   image: v.optional(v.string()),
 });
 
 export const heartbeat = mutation({
-  args: { hackathonId: v.id("hackathons"), sessionId: v.string() },
+  args: {
+    hackathonId: v.id("hackathons"),
+    sessionId: v.string(),
+    visitorId: v.optional(v.string()),
+  },
   returns: v.object({ roomToken: v.string(), sessionToken: v.string() }),
-  handler: async (ctx, { hackathonId, sessionId }) => {
-    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(sessionId)) {
+  handler: async (ctx, { hackathonId, sessionId, visitorId }) => {
+    if (!uuid.test(sessionId)) {
       throw new Error("Invalid presence session");
     }
     if (!(await ctx.db.get("hackathons", hackathonId))) {
@@ -24,9 +29,12 @@ export const heartbeat = mutation({
 
     const identity = await ctx.auth.getUserIdentity();
     const roomId = `hackathon:${hackathonId}`;
+    if (!identity && (!visitorId || !uuid.test(visitorId))) {
+      throw new Error("Invalid anonymous visitor");
+    }
     const userId = identity
       ? `account:${identity.tokenIdentifier}`
-      : `visitor:${sessionId}`;
+      : `visitor:${visitorId?.toLowerCase()}`;
     const tokens = await presence.heartbeat(
       ctx,
       roomId,

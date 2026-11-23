@@ -6,6 +6,27 @@ import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 
+let ephemeralVisitorId: string | undefined;
+
+function browserVisitorId() {
+  const key = "hackerspace-visitor-id";
+  try {
+    const stored = localStorage.getItem(key);
+    if (
+      stored &&
+      /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(stored)
+    ) {
+      return stored;
+    }
+    const visitorId = crypto.randomUUID();
+    localStorage.setItem(key, visitorId);
+    return visitorId;
+  } catch {
+    ephemeralVisitorId ??= crypto.randomUUID();
+    return ephemeralVisitorId;
+  }
+}
+
 function useHackathonPresence(hackathonId: Id<"hackathons">) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { url } = useConvex();
@@ -20,6 +41,7 @@ function useHackathonPresence(hackathonId: Id<"hackathons">) {
   useEffect(() => {
     if (isLoading) return;
     const sessionId = crypto.randomUUID();
+    const visitorId = isAuthenticated ? undefined : browserVisitorId();
     let active = true;
     let sessionToken: string | undefined;
     let timer: ReturnType<typeof setTimeout>;
@@ -29,7 +51,7 @@ function useHackathonPresence(hackathonId: Id<"hackathons">) {
 
     async function sendHeartbeat() {
       try {
-        const result = await heartbeat({ hackathonId, sessionId });
+        const result = await heartbeat({ hackathonId, sessionId, visitorId });
         if (!active) {
           disconnectSession(result.sessionToken);
           return;

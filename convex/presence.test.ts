@@ -37,9 +37,14 @@ it("counts visitors without exposing them and deduplicates tabs by verified acco
       ...args,
       sessionId: crypto.randomUUID(),
     });
-    const anonymous = await t.mutation(api.presence.heartbeat, args);
+    const visitorArgs = { ...args, visitorId: sessionId };
+    const anonymous = await t.mutation(api.presence.heartbeat, visitorArgs);
+    const reloaded = await t.mutation(api.presence.heartbeat, {
+      ...visitorArgs,
+      sessionId: crypto.randomUUID(),
+    });
     const differentRoom = await t.mutation(api.presence.heartbeat, {
-      ...args,
+      ...visitorArgs,
       hackathonId: otherId,
     });
 
@@ -50,6 +55,7 @@ it("counts visitors without exposing them and deduplicates tabs by verified acco
       }),
     ).rejects.toThrow("Invalid presence session");
     expect(anonymous.sessionToken).not.toBe(tabOne.sessionToken);
+    expect(reloaded.sessionToken).not.toBe(anonymous.sessionToken);
     expect(anonymous.roomToken).toBe(tabOne.roomToken);
     const listArgs = { roomToken: tabOne.roomToken };
     await expect(t.query(api.presence.list, listArgs)).resolves.toEqual({
@@ -77,6 +83,12 @@ it("counts visitors without exposing them and deduplicates tabs by verified acco
     await expect(
       otherViewer.query(api.presence.list, listArgs),
     ).resolves.toEqual({ count: 1, viewers: [] });
+    await t.mutation(api.presence.disconnect, {
+      sessionToken: anonymous.sessionToken,
+    });
+    await expect(t.query(api.presence.list, listArgs)).resolves.toEqual({
+      count: 1,
+    });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   } finally {
     vi.useRealTimers();
@@ -90,6 +102,7 @@ it("stops counting a session that stops sending heartbeats", async () => {
     const { roomToken } = await t.mutation(api.presence.heartbeat, {
       hackathonId,
       sessionId: crypto.randomUUID(),
+      visitorId: crypto.randomUUID(),
     });
     await expect(t.query(api.presence.list, { roomToken })).resolves.toEqual({
       count: 1,

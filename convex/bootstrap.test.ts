@@ -85,6 +85,7 @@ it("can reset a local deployment", async () => {
         "teamJoinRequests",
         "teamConversations",
         "teamMessages",
+        "scoutCandidates",
       ],
     });
   } finally {

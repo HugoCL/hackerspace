@@ -14,6 +14,8 @@ import type * as jobs from "../jobs.js";
 import type * as migrations from "../migrations.js";
 import type * as presence from "../presence.js";
 import type * as sampleHackathons from "../sampleHackathons.js";
+import type * as scout from "../scout.js";
+import type * as scoutExtraction from "../scoutExtraction.js";
 import type * as seed from "../seed.js";
 import type * as teamText from "../teamText.js";
 import type * as teams from "../teams.js";
@@ -31,6 +33,8 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   presence: typeof presence;
   sampleHackathons: typeof sampleHackathons;
+  scout: typeof scout;
+  scoutExtraction: typeof scoutExtraction;
   seed: typeof seed;
   teamText: typeof teamText;
   teams: typeof teams;

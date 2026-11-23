@@ -3,8 +3,12 @@ import presence from "@convex-dev/presence/convex.config.js";
 import rateLimiter from "@convex-dev/rate-limiter/convex.config.js";
 import workpool from "@convex-dev/workpool/convex.config.js";
 import { defineApp } from "convex/server";
+import { v } from "convex/values";
 
-const app = defineApp();
+const app = defineApp({
+  // Optional: Firecrawl answers anonymous requests with a lower rate limit.
+  env: { FIRECRAWL_API_KEY: v.optional(v.string()) },
+});
 // Schema changes and backfills: see convex/migrations.ts.
 app.use(migrations);
 app.use(presence);

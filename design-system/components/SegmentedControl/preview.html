@@ -1,0 +1,16 @@
+<!-- @dsCard group="Forms" height=90 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>SegmentedControl</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{direction:'row',gap:4,wrap:true,align:'center'},
+    h(H.SegmentedControl,{label:'Modalidad',options:[{value:'all',label:'Todas',count:12},{value:'p',label:'Presenciales',icon:'pin'},{value:'v',label:'Virtuales',icon:'globe'}]}),
+    h(H.SegmentedControl,{label:'Vista',defaultValue:'Mapa',options:['Lista','Mapa']})));
+</script>
+</body>
+</html>

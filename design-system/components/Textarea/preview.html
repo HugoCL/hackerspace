@@ -1,0 +1,14 @@
+<!-- @dsCard group="Forms" height=170 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Textarea</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h('div',{style:{maxWidth:420}}, h(H.Textarea,{label:'Cuéntales por qué quieres unirte',placeholder:'Sé hacer interfaces rápidas y ya trabajé con datos de transporte…',hint:'Una o dos frases. El equipo lo ve junto a tu perfil.'})));
+</script>
+</body>
+</html>

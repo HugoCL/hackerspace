@@ -1,0 +1,17 @@
+<!-- @dsCard group="Forms" height=130 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Checkbox</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{gap:2},
+    h(H.Checkbox,{label:'Acepto las bases de la hackathon',defaultChecked:true}),
+    h(H.Checkbox,{label:'Avísame cuando un equipo busque mi perfil',hint:'Te escribimos solo cuando alguien busque Frontend o Diseño.'}),
+    h(H.Checkbox,{label:'Ya tengo equipo',disabled:true})));
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!-- @dsCard group="Overlays" height=260 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Menu</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{direction:'row',gap:4},
+    h(H.Menu,{label:'Camila',items:[{label:'Mi perfil',href:'#'},{label:'Mis hackathones',icon:'calendar'},{label:'Mis agentes',icon:'bot'},'separator',{label:'Cerrar sesión'}]}),
+    h(H.Menu,{'aria-label':'Más opciones',trigger:{icon:'more','aria-label':'Más opciones',variant:'ghost'},items:[{label:'Editar equipo'},{label:'Copiar enlace'},'separator',{label:'Salir del equipo',danger:true}]})));
+</script>
+</body>
+</html>

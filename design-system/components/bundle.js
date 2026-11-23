@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"Hackerspace","components":[{"name":"AppShell"},{"name":"PageHeader"},{"name":"Section"},{"name":"Stack"},{"name":"Grid"},{"name":"Button"},{"name":"Tabs"},{"name":"Input"},{"name":"Select"},{"name":"Icon"},{"name":"Badge"},{"name":"Card"},{"name":"Avatar"},{"name":"AvatarStack"},{"name":"EmptyState"},{"name":"PresencePill"},{"name":"Countdown"},{"name":"AgentTag"},{"name":"ActivityFeed"},{"name":"TeamSlots"},{"name":"HackathonCard"},{"name":"TeamCard"},{"name":"ProjectCard"}]} */
+/* @ds-bundle: {"format":4,"namespace":"Hackerspace","components":[{"name":"AppShell"},{"name":"PageHeader"},{"name":"Section"},{"name":"Stack"},{"name":"Grid"},{"name":"Button"},{"name":"Tabs"},{"name":"Input"},{"name":"Select"},{"name":"Icon"},{"name":"Badge"},{"name":"Card"},{"name":"Avatar"},{"name":"AvatarStack"},{"name":"EmptyState"},{"name":"PresencePill"},{"name":"Countdown"},{"name":"AgentTag"},{"name":"ActivityFeed"},{"name":"TeamSlots"},{"name":"HackathonCard"},{"name":"TeamCard"},{"name":"ProjectCard"},{"name":"Checkbox"},{"name":"RadioGroup"},{"name":"Switch"},{"name":"Textarea"},{"name":"SegmentedControl"},{"name":"Separator"},{"name":"Skeleton"},{"name":"Progress"},{"name":"Table"},{"name":"Accordion"},{"name":"Alert"},{"name":"Tooltip"},{"name":"Toaster"},{"name":"Breadcrumb"},{"name":"Pagination"},{"name":"Dialog"},{"name":"Drawer"},{"name":"Menu"},{"name":"Popover"}]} */
 (function () {
   var React = window.React;
   var h = React.createElement;
@@ -29,7 +29,13 @@
     globe: [['circle', { cx: 12, cy: 12, r: 9 }], ['path', { d: 'M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18' }]],
     arrow: [['path', { d: 'M5 12h14M13 6l6 6-6 6' }]],
     menu: [['path', { d: 'M4 7h16M4 12h16M4 17h16' }]],
-    code: [['path', { d: 'M8 8l-4 4 4 4M16 8l4 4-4 4M14 5l-4 14' }]]
+    code: [['path', { d: 'M8 8l-4 4 4 4M16 8l4 4-4 4M14 5l-4 14' }]],
+    check: [['path', { d: 'M5 12.5l4.5 4.5L19 7.5' }]],
+    x: [['path', { d: 'M6 6l12 12M18 6L6 18' }]],
+    chevron: [['path', { d: 'M6 9l6 6 6-6' }]],
+    info: [['circle', { cx: 12, cy: 12, r: 9 }], ['path', { d: 'M12 11v6M12 7.5v.5' }]],
+    alert: [['path', { d: 'M12 4l9 16H3zM12 10v5M12 17.5v.5' }]],
+    more: [['circle', { cx: 5, cy: 12, r: 1 }], ['circle', { cx: 12, cy: 12, r: 1 }], ['circle', { cx: 19, cy: 12, r: 1 }]]
   };
   function Icon(props) {
     var size = props.size || 16;
@@ -339,11 +345,309 @@
           props.likes != null ? h('span', { className: 'hs-pcard-likes' }, h(Icon, { name: 'heart', size: 14 }), props.likes) : null)));
   }
 
+
+  /* ---------- More forms ---------- */
+  function Choice(props, kind) {
+    var id = useId(props.id);
+    var rest = omit(props, ['label', 'hint', 'className', 'id', 'children']);
+    var sw = kind === 'switch';
+    return h('div', { className: cx('hs-check', props.className) },
+      h('input', Object.assign({ type: 'checkbox' }, rest, {
+        id: id, role: sw ? 'switch' : undefined, className: sw ? 'hs-switch-input' : 'hs-check-input',
+        'aria-describedby': props.hint ? id + '-hint' : undefined
+      })),
+      h('div', { className: 'hs-check-text' },
+        h('label', { htmlFor: id, className: 'hs-check-label' }, props.label || props.children),
+        props.hint ? h('div', { className: 'hs-field-hint', id: id + '-hint' }, props.hint) : null));
+  }
+  function Checkbox(props) { return Choice(props, 'checkbox'); }
+  function Switch(props) { return Choice(props, 'switch'); }
+
+  function useValue(props, fallback) {
+    var st = React.useState(props.defaultValue != null ? props.defaultValue : fallback);
+    var value = props.value != null ? props.value : st[0];
+    return [value, function (v) { st[1](v); if (props.onChange) props.onChange(v); }];
+  }
+  function optionOf(o) { return typeof o === 'string' ? { value: o, label: o } : o; }
+
+  function RadioGroup(props) {
+    var name = useId(props.name);
+    var v = useValue(props);
+    return h('fieldset', { className: cx('hs-radiogroup', props.className) },
+      props.label ? h('legend', { className: 'hs-field-label' }, props.label) : null,
+      (props.options || []).map(function (raw) {
+        var o = optionOf(raw), id = name + '-' + o.value;
+        return h('div', { className: 'hs-check', key: o.value },
+          h('input', { type: 'radio', name: name, id: id, value: o.value, checked: v[0] === o.value, disabled: o.disabled, onChange: function () { v[1](o.value); }, className: 'hs-radio-input', 'aria-describedby': o.hint ? id + '-hint' : undefined }),
+          h('div', { className: 'hs-check-text' },
+            h('label', { htmlFor: id, className: 'hs-check-label' }, o.label),
+            o.hint ? h('div', { className: 'hs-field-hint', id: id + '-hint' }, o.hint) : null));
+      }));
+  }
+
+  function SegmentedControl(props) {
+    var name = useId(props.name);
+    var opts = (props.options || []).map(optionOf);
+    var v = useValue(props, opts[0] && opts[0].value);
+    return h('fieldset', { className: cx('hs-segmented', props.className), 'aria-label': props.label },
+      opts.map(function (o) {
+        return h('label', { className: 'hs-segment', key: o.value },
+          h('input', { type: 'radio', name: name, value: o.value, checked: v[0] === o.value, onChange: function () { v[1](o.value); }, className: 'hs-segment-input' }),
+          o.icon ? h(Icon, { name: o.icon, size: 14 }) : null,
+          h('span', null, o.label),
+          o.count != null ? h('span', { className: 'hs-tab-count' }, o.count) : null);
+      }));
+  }
+
+  function Textarea(props) {
+    var id = useId(props.id);
+    var rest = omit(props, ['label', 'hint', 'error', 'className', 'id']);
+    return Field(Object.assign({}, props, { id: id }),
+      h('textarea', Object.assign({ rows: 4 }, rest, {
+        id: id, className: 'hs-input-control hs-textarea', 'aria-invalid': props.error ? true : undefined,
+        'aria-describedby': (props.error || props.hint) ? id + '-hint' : undefined
+      })));
+  }
+
+  /* ---------- More display ---------- */
+  function Separator(props) {
+    if (!props.label) return h('hr', { className: cx('hs-separator', props.className) });
+    return h('div', { className: cx('hs-separator hs-separator--label', props.className) }, h('span', null, props.label));
+  }
+
+  function Skeleton(props) {
+    var style = Object.assign({ width: props.width, height: props.height }, props.style);
+    return h('span', { className: cx('hs-skeleton', 'hs-skeleton--' + (props.variant || 'text'), props.className), style: style, 'aria-hidden': true });
+  }
+
+  function Progress(props) {
+    var id = useId(props.id);
+    var max = props.max || 100, value = Math.min(max, Math.max(0, props.value || 0));
+    return h('div', { className: cx('hs-progress', props.tone === 'live' && 'hs-progress--live', props.className) },
+      (props.label || props.valueLabel !== false) ? h('div', { className: 'hs-progress-head' },
+        props.label ? h('label', { htmlFor: id, className: 'hs-field-label' }, props.label) : h('span'),
+        props.valueLabel === false ? null : h('span', { className: 'hs-progress-value' }, props.valueLabel || Math.round(value / max * 100) + '%')) : null,
+      h('progress', { id: id, className: 'hs-progress-bar', value: value, max: max, 'aria-label': props.label ? undefined : props['aria-label'] }));
+  }
+
+  function Table(props) {
+    var cols = props.columns || [], rows = props.rows || [];
+    return h('div', { className: cx('hs-table-wrap', props.className) },
+      h('table', { className: 'hs-table' },
+        props.caption ? h('caption', { className: 'hs-table-caption' }, props.caption) : null,
+        h('thead', null, h('tr', null, cols.map(function (c) {
+          return h('th', { key: c.key, scope: 'col', style: { textAlign: c.align, width: c.width } }, c.label);
+        }))),
+        h('tbody', null, rows.length ? rows.map(function (r, i) {
+          return h('tr', { key: r[props.rowKey || 'id'] != null ? r[props.rowKey || 'id'] : i }, cols.map(function (c) {
+            return h('td', { key: c.key, style: { textAlign: c.align }, className: c.numeric ? 'hs-table-num' : undefined }, c.render ? c.render(r) : r[c.key]);
+          }));
+        }) : h('tr', null, h('td', { colSpan: cols.length, className: 'hs-table-empty' }, props.empty || 'Sin resultados')))));
+  }
+
+  function Accordion(props) {
+    var name = useId(props.name);
+    return h('div', { className: cx('hs-accordion', props.className) },
+      (props.items || []).map(function (it, i) {
+        return h('details', { key: it.id || i, className: 'hs-accordion-item', name: props.multiple ? undefined : name, open: it.defaultOpen || undefined },
+          h('summary', { className: 'hs-accordion-summary' }, h('span', null, it.title), h(Icon, { name: 'chevron' })),
+          h('div', { className: 'hs-accordion-body' }, it.content));
+      }));
+  }
+
+  /* ---------- Feedback ---------- */
+  var ALERT_ICON = { info: 'info', live: 'bell', success: 'check', danger: 'alert' };
+  function Alert(props) {
+    var tone = props.tone || 'info';
+    return h('div', { className: cx('hs-alert', 'hs-alert--' + tone, props.className), role: tone === 'danger' ? 'alert' : 'status' },
+      h(Icon, { name: props.icon || ALERT_ICON[tone] }),
+      h('div', { className: 'hs-alert-text' },
+        props.title ? h('div', { className: 'hs-alert-title' }, props.title) : null,
+        props.children ? h('div', { className: 'hs-alert-desc' }, props.children) : null),
+      props.action ? h('div', { className: 'hs-alert-action' }, props.action) : null);
+  }
+
+  function Tooltip(props) {
+    var id = useId(props.id);
+    var child = React.Children.only(props.children);
+    return h('span', { className: cx('hs-tooltip', props.side === 'bottom' && 'hs-tooltip--bottom', props.className) },
+      React.cloneElement(child, { 'aria-describedby': id }),
+      h('span', { role: 'tooltip', id: id, className: 'hs-tooltip-bubble' }, props.label));
+  }
+
+  var toastState = { items: [], listeners: [], seq: 0 };
+  function toastEmit() { toastState.listeners.forEach(function (l) { l(toastState.items); }); }
+  function dismissToast(id) {
+    toastState.items = toastState.items.filter(function (t) { return t.id !== id; });
+    toastEmit();
+  }
+  function toast(opts) {
+    if (typeof opts === 'string') opts = { title: opts };
+    var t = Object.assign({ id: ++toastState.seq, duration: 5000 }, opts);
+    toastState.items = [t].concat(toastState.items).slice(0, 4);
+    toastEmit();
+    if (t.duration) setTimeout(function () { dismissToast(t.id); }, t.duration);
+    return t.id;
+  }
+  function ToastCard(props) {
+    var t = props.toast, a = t.actor;
+    return h('div', { className: cx('hs-toast', t.tone && 'hs-toast--' + t.tone) },
+      a ? (a.agent ? h(AgentTag, { name: a.name }) : h(Avatar, { name: a.name, src: a.src, size: 'sm' })) : null,
+      h('div', { className: 'hs-toast-text' },
+        h('div', { className: 'hs-toast-title' }, t.title),
+        t.description ? h('div', { className: 'hs-toast-desc' }, t.description) : null),
+      t.action ? h(Button, { size: 'sm', onClick: function () { if (t.action.onClick) t.action.onClick(); if (props.onDismiss) props.onDismiss(t.id); } }, t.action.label) : null,
+      h(Button, { variant: 'ghost', size: 'sm', icon: 'x', 'aria-label': 'Cerrar', onClick: function () { if (props.onDismiss) props.onDismiss(t.id); } }));
+  }
+  function Toaster(props) {
+    var st = React.useState(toastState.items);
+    React.useEffect(function () {
+      if (props.items) return;
+      toastState.listeners.push(st[1]);
+      return function () { toastState.listeners = toastState.listeners.filter(function (l) { return l !== st[1]; }); };
+    }, [props.items]);
+    var items = props.items || st[0];
+    return h('div', { className: cx('hs-toaster', props.inline && 'hs-toaster--inline', props.className), role: 'region', 'aria-label': 'Notificaciones', 'aria-live': 'polite' },
+      items.map(function (t, i) { return h(ToastCard, { key: t.id || i, toast: t, onDismiss: props.onDismiss || dismissToast }); }));
+  }
+
+  /* ---------- Navigation ---------- */
+  function Breadcrumb(props) {
+    var items = props.items || [];
+    return h('nav', { 'aria-label': 'Ruta', className: cx('hs-breadcrumb', props.className) },
+      h('ol', null, items.map(function (it, i) {
+        var last = i === items.length - 1;
+        return h('li', { key: i },
+          last || !it.href ? h('span', { 'aria-current': last ? 'page' : undefined }, it.label) : h('a', { href: it.href, className: 'hs-link' }, it.label));
+      })));
+  }
+
+  function pageWindow(page, count) {
+    var out = [], last = 0;
+    for (var p = 1; p <= count; p++) {
+      if (p === 1 || p === count || Math.abs(p - page) <= 1) {
+        if (last && p - last > 1) out.push('gap' + p);
+        out.push(p); last = p;
+      }
+    }
+    return out;
+  }
+  function Pagination(props) {
+    var count = props.pageCount || 1;
+    var st = React.useState(props.defaultPage || 1);
+    var page = props.page != null ? props.page : st[0];
+    function go(p) { if (p < 1 || p > count || p === page) return; st[1](p); if (props.onChange) props.onChange(p); }
+    return h('nav', { 'aria-label': 'Paginación', className: cx('hs-pagination', props.className) },
+      h(Button, { variant: 'ghost', size: 'sm', disabled: page === 1, onClick: function () { go(page - 1); } }, 'Anterior'),
+      h('ol', null, pageWindow(page, count).map(function (p) {
+        if (typeof p === 'string') return h('li', { key: p, className: 'hs-pagination-gap', 'aria-hidden': true }, '…');
+        return h('li', { key: p }, h('button', { type: 'button', className: 'hs-pagination-page', 'aria-current': p === page ? 'page' : undefined, 'aria-label': 'Página ' + p, onClick: function () { go(p); } }, p));
+      })),
+      h(Button, { variant: 'ghost', size: 'sm', disabled: page === count, onClick: function () { go(page + 1); } }, 'Siguiente'));
+  }
+
+  /* ---------- Overlays ---------- */
+  function Dialog(props) {
+    var id = useId(props.id);
+    var ref = React.useRef(null);
+    React.useEffect(function () {
+      var d = ref.current;
+      if (!d) return;
+      if (props.open && !d.open) d.showModal();
+      if (!props.open && d.open) d.close();
+    }, [props.open]);
+    function close() { if (props.onClose) props.onClose(); }
+    return h('dialog', {
+      ref: ref, className: cx('hs-dialog', props.side === 'right' && 'hs-dialog--drawer', props.className),
+      'aria-labelledby': id + '-t', 'aria-describedby': props.description ? id + '-d' : undefined,
+      onClose: close, onClick: function (e) { if (e.target === e.currentTarget) close(); }
+    },
+      h('div', { className: 'hs-dialog-panel' },
+        h('div', { className: 'hs-dialog-head' },
+          h('h2', { className: 'hs-dialog-title', id: id + '-t' }, props.title),
+          h(Button, { variant: 'ghost', size: 'sm', icon: 'x', 'aria-label': 'Cerrar', onClick: close })),
+        props.description ? h('p', { className: 'hs-dialog-desc', id: id + '-d' }, props.description) : null,
+        props.children ? h('div', { className: 'hs-dialog-body' }, props.children) : null,
+        props.footer ? h('div', { className: 'hs-dialog-foot' }, props.footer) : null));
+  }
+  function Drawer(props) { return h(Dialog, Object.assign({ side: 'right' }, props)); }
+
+  function usePopup() {
+    var st = React.useState(false);
+    var wrap = React.useRef(null);
+    React.useEffect(function () {
+      if (!st[0]) return;
+      function down(e) { if (wrap.current && !wrap.current.contains(e.target)) st[1](false); }
+      function key(e) {
+        if (e.key !== 'Escape') return;
+        st[1](false);
+        var t = wrap.current && wrap.current.querySelector('[aria-expanded]');
+        if (t) t.focus();
+      }
+      document.addEventListener('mousedown', down);
+      document.addEventListener('keydown', key);
+      return function () { document.removeEventListener('mousedown', down); document.removeEventListener('keydown', key); };
+    }, [st[0]]);
+    return { open: st[0], set: st[1], wrap: wrap };
+  }
+  function triggerProps(props, pop, kind) {
+    return Object.assign({ variant: 'secondary' }, props.trigger, {
+      'aria-haspopup': kind, 'aria-expanded': pop.open, onClick: function () { pop.set(!pop.open); }
+    });
+  }
+
+  function Menu(props) {
+    var pop = usePopup();
+    var list = React.useRef(null);
+    React.useEffect(function () {
+      if (!pop.open || !list.current) return;
+      var first = list.current.querySelector('[role="menuitem"]:not([disabled])');
+      if (first) first.focus();
+    }, [pop.open]);
+    function onKey(e) {
+      var els = Array.prototype.slice.call(list.current.querySelectorAll('[role="menuitem"]:not([disabled])'));
+      var i = els.indexOf(document.activeElement);
+      var n = e.key === 'ArrowDown' ? i + 1 : e.key === 'ArrowUp' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? els.length - 1 : null;
+      if (n === null) { if (e.key === 'Tab') pop.set(false); return; }
+      e.preventDefault();
+      els[(n + els.length) % els.length].focus();
+    }
+    function choose(it) {
+      pop.set(false);
+      var t = pop.wrap.current && pop.wrap.current.querySelector('[aria-expanded]');
+      if (t) t.focus();
+      if (it.onSelect) it.onSelect();
+    }
+    return h('span', { className: cx('hs-popup', props.className), ref: pop.wrap },
+      h(Button, triggerProps(props, pop, 'menu'), props.label, props.label ? h(Icon, { name: 'chevron', size: 14 }) : null),
+      pop.open ? h('div', { className: cx('hs-menu', props.align === 'end' && 'hs-popup--end'), role: 'menu', ref: list, onKeyDown: onKey, 'aria-label': props['aria-label'] || (typeof props.label === 'string' ? props.label : undefined) },
+        (props.items || []).map(function (it, i) {
+          if (it === 'separator') return h('hr', { key: i, className: 'hs-separator' });
+          var cls = cx('hs-menu-item', it.danger && 'hs-menu-item--danger');
+          var inner = h(Fragment, null, it.icon ? h(Icon, { name: it.icon }) : null, h('span', null, it.label));
+          return it.href
+            ? h('a', { key: i, role: 'menuitem', tabIndex: -1, href: it.href, className: cls, onClick: function () { pop.set(false); } }, inner)
+            : h('button', { key: i, type: 'button', role: 'menuitem', tabIndex: -1, disabled: it.disabled, className: cls, onClick: function () { choose(it); } }, inner);
+        })) : null);
+  }
+
+  function Popover(props) {
+    var pop = usePopup();
+    return h('span', { className: cx('hs-popup', props.className), ref: pop.wrap },
+      h(Button, triggerProps(props, pop, 'dialog'), props.label),
+      pop.open ? h('div', { className: cx('hs-popover', props.align === 'end' && 'hs-popup--end'), role: 'dialog', 'aria-label': props.title || (typeof props.label === 'string' ? props.label : undefined) },
+        props.title ? h('div', { className: 'hs-popover-title' }, props.title) : null,
+        typeof props.children === 'function' ? props.children(function () { pop.set(false); }) : props.children) : null);
+  }
+
+
   window.Hackerspace = Object.assign(window.Hackerspace || {}, {
     AppShell: AppShell, PageHeader: PageHeader, Section: Section, Stack: Stack, Grid: Grid,
     Button: Button, Tabs: Tabs, Input: Input, Select: Select, Icon: Icon,
     Badge: Badge, Card: Card, Avatar: Avatar, AvatarStack: AvatarStack, EmptyState: EmptyState,
     PresencePill: PresencePill, Countdown: Countdown, AgentTag: AgentTag, ActivityFeed: ActivityFeed, TeamSlots: TeamSlots,
-    HackathonCard: HackathonCard, TeamCard: TeamCard, ProjectCard: ProjectCard
+    HackathonCard: HackathonCard, TeamCard: TeamCard, ProjectCard: ProjectCard,
+    Checkbox: Checkbox, RadioGroup: RadioGroup, Switch: Switch, Textarea: Textarea, SegmentedControl: SegmentedControl, Separator: Separator, Skeleton: Skeleton, Progress: Progress, Table: Table, Accordion: Accordion, Alert: Alert, Tooltip: Tooltip, Toaster: Toaster, Breadcrumb: Breadcrumb, Pagination: Pagination, Dialog: Dialog, Drawer: Drawer, Menu: Menu, Popover: Popover,
+    toast: toast, dismissToast: dismissToast
   });
 })();

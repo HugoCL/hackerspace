@@ -1,0 +1,14 @@
+<!-- @dsCard group="Display" height=100 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Separator</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Stack,{gap:4,style:{maxWidth:360}}, h(H.Button,{variant:'primary'},'Crear un equipo'), h(H.Separator,{label:'o'}), h(H.Button,null,'Unirme a uno existente'), h(H.Separator)));
+</script>
+</body>
+</html>

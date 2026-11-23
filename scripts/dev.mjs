@@ -18,11 +18,12 @@
 // or from .env.local, and CONVEX_AGENT_MODE is removed. Cloud mode refuses to start when the key
 // or CONVEX_DEPLOYMENT targets production (`prod:` prefix, or a legacy key with no prefix),
 // because this script pushes and seeds.
-// Before starting, a one-shot push seeds empty tables. Only anonymous local deployments
+// Before starting, configure the Clerk issuer on anonymous deployments and check it on cloud.
+// A one-shot push seeds empty tables. Only anonymous local deployments
 // also complete pending migrations before serving the app. Set DEV_SEED=0
 // to skip preparation. Both pushes share the same deployment selectors.
 // Extra arguments are forwarded to `convex dev` only. They can change the target (--url,
-// --configure, --env-file), so when any are given the seed step is skipped.
+// --configure, --env-file), so when any are given auth preflight and seeding are skipped.
 // Stopping: convex cleans up `next dev` and the local backend only on SIGINT, so SIGINT, SIGTERM
 // and SIGHUP all send SIGINT to the running child, at most once. With a TTY a Ctrl-C already
 // reached the child from the terminal; if it is still alive 2 s later (a harness PTY may signal
@@ -35,6 +36,8 @@ import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const CLERK_ISSUER_VAR = "CLERK_JWT_ISSUER_DOMAIN";
+const LOCAL_CLERK_ISSUER = "https://gorgeous-stallion-3913.clerk.accounts.dev";
 
 const KEY_VARS = ["CONVEX_DEPLOY_KEY", "CONVEX_DEPLOYMENT_TOKEN"];
 const SELECTORS = [
@@ -181,25 +184,58 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
 }
 
 // Runs `convex <args>` and resolves with { code, signal }.
-function convex(args) {
+function convex(args, { capture = false } = {}) {
   return new Promise((resolveRun) => {
     if (stopping) return resolveRun({ code: null, signal: stopSignal });
-    child = spawn("convex", args, { cwd: root, env, stdio: "inherit" });
+    let stdout = "";
+    child = spawn("convex", args, {
+      cwd: root,
+      env,
+      stdio: capture ? ["inherit", "pipe", "inherit"] : "inherit",
+    });
+    child.stdout?.setEncoding("utf8").on("data", (chunk) => {
+      stdout += chunk;
+    });
     child.on("error", (err) => {
       console.error(`dev: cannot start convex: ${err.message}`);
-      resolveRun({ code: 1, signal: null });
+      resolveRun({ code: 1, signal: null, stdout });
     });
-    child.on("exit", (code, signal) => resolveRun({ code, signal }));
+    child.on("close", (code, signal) => resolveRun({ code, signal, stdout }));
   });
 }
 
 const exitCode = ({ code, signal }) =>
   code ?? 128 + (constants.signals[signal] ?? 0);
 
+const extraArgs = process.argv.slice(2);
+if (extraArgs.length === 0) {
+  if (mode.anonymous) {
+    const init = await convex(["init"]);
+    if (stopping || init.code !== 0) process.exit(exitCode(init));
+    const issuer = await convex([
+      "env",
+      "set",
+      CLERK_ISSUER_VAR,
+      LOCAL_CLERK_ISSUER,
+    ]);
+    if (stopping || issuer.code !== 0) process.exit(exitCode(issuer));
+  } else {
+    const issuer = await convex(["env", "get", CLERK_ISSUER_VAR], {
+      capture: true,
+    });
+    if (stopping || issuer.code !== 0) process.exit(exitCode(issuer));
+    if (!issuer.stdout.trim()) {
+      console.error(
+        `dev: missing ${CLERK_ISSUER_VAR} on the Convex deployment. Run \`npx convex env set ${CLERK_ISSUER_VAR} <Clerk Frontend API URL>\` against your dev deployment.`,
+      );
+      process.exit(1);
+    }
+  }
+}
+
 // `convex dev` runs either --run or --start after a push, not both, so the seed gets its own
 // one-shot push first. A failure there is not fatal: the normal run below shows the same error
 // and keeps watching.
-const extraArgs = process.argv.slice(2);
 if (process.env.DEV_SEED !== "0" && extraArgs.length > 0) {
   console.log("dev: extra arguments given, skipping the seed step");
 } else if (process.env.DEV_SEED !== "0") {

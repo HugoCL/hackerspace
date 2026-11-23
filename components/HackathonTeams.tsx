@@ -770,9 +770,7 @@ export default function HackathonTeams({
                 <h3 className="hs-tcard-title wrap-anywhere">{team.name}</h3>
               </div>
               <Collapsible>
-                <CollapsibleTrigger
-                  className="group flex w-full cursor-pointer items-center justify-between gap-2 text-left text-muted-foreground"
-                >
+                <CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between gap-2 text-left text-muted-foreground">
                   <span className="hs-tcard-pitch line-clamp-1! group-data-open:hidden!">
                     {team.description}
                   </span>

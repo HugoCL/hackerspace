@@ -107,7 +107,7 @@ function useMorphingWord(paused: boolean) {
   return morph;
 }
 
-// The per-word entrance and glyph live in design-system/components/bundle.css,
+// The per-word entrance and its graphics live in design-system/components/bundle.css,
 // keyed by data-word. Each letter gets --i (its index) and data-seg (which
 // part of a compound word it belongs to).
 function MorphLetters({ text }: { text: string }) {
@@ -155,12 +155,15 @@ export default function SiteFooter() {
             <span aria-hidden="true">
               <span className="hs-footer-word" key={wordKey}>
                 <MorphLetters text={text} />
+                <span className="hs-footer-fx">
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                </span>
               </span>
               <span className="hs-footer-gap" />
               space
-              <span className="hs-footer-glyph" key={`glyph-${word}`}>
-                <span className="hs-footer-glyph-ink" />
-              </span>
             </span>
           </p>
           <p className="hs-footer-tagline">

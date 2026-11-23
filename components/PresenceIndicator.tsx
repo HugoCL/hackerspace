@@ -34,17 +34,19 @@ export default function PresenceIndicator({
       <span
         aria-live={announce ? "polite" : undefined}
         aria-atomic={announce ? true : undefined}
-        className={count ? "text-(--hs-live-ink)" : undefined}
+        className="inline-flex items-center gap-2"
       >
-        {label}
-      </span>
-      {visitors > 0 && (
-        <span className="text-muted-foreground">
-          {visitors > 1000
-            ? "+1000 visitantes o más"
-            : `+${visitors} visitante${visitors === 1 ? "" : "s"}`}
+        <span className={count ? "text-(--hs-live-ink)" : undefined}>
+          {label}
         </span>
-      )}
+        {visitors > 0 && (
+          <span className="text-muted-foreground">
+            {visitors > 1000
+              ? "+1000 visitantes o más"
+              : `+${visitors} visitante${visitors === 1 ? "" : "s"}`}
+          </span>
+        )}
+      </span>
     </span>
   );
 }

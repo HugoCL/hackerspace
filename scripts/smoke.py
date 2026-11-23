@@ -126,10 +126,11 @@ def check():
                     "En línea"
                 )
                 presence = page.get_by_role("region", name="Presencia en vivo")
-                count = presence.locator("[aria-live=polite]")
+                live_status = presence.locator("[aria-live=polite]")
+                count = live_status.get_by_text("0 mirando", exact=True)
                 cells = presence.locator("[data-filled=true]")
                 expect(count).to_have_text("0 mirando")
-                expect(presence.get_by_text("+1 visitante", exact=True)).to_be_visible()
+                expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible()
                 expect(cells).to_have_count(0)
                 expect(presence.get_by_role("button", name="Ver quién está mirando")).to_have_count(0)
                 teams = sidebar.get_by_role("region", name="Equipos", exact=True)
@@ -161,7 +162,7 @@ def check():
                     other_page = other_context.new_page()
                     other_page.on("pageerror", lambda err: page_errors.append(str(err)))
                     other_page.goto(page.url, wait_until="domcontentloaded")
-                    expect(presence.get_by_text("+2 visitantes", exact=True)).to_be_visible()
+                    expect(live_status.get_by_text("+2 visitantes", exact=True)).to_be_visible()
                     expect(count).to_have_text("0 mirando")
                     expect(cells).to_have_count(0)
                     expect(catalog_card.get_by_text("+2 visitantes", exact=True)).to_be_visible()
@@ -177,7 +178,9 @@ def check():
                     )
                     presence.screenshot(path=str(ARTIFACTS / "presence-two-viewers.png"))
                     other_presence = other_page.get_by_role("region", name="Presencia en vivo")
-                    expect(other_presence.get_by_text("+2 visitantes", exact=True)).to_be_visible()
+                    expect(other_presence.locator("[aria-live=polite]").get_by_text(
+                        "+2 visitantes", exact=True
+                    )).to_be_visible()
                     expect(other_presence.locator("[data-filled=false]").first).to_have_css(
                         "transition-property", "none"
                     )
@@ -189,7 +192,7 @@ def check():
                         path=str(ARTIFACTS / "profile-mobile.png"), full_page=True, style=clean_capture
                     )
                     other_page.goto("about:blank", wait_until="domcontentloaded")
-                    expect(presence.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=5_000)
+                    expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=5_000)
                 finally:
                     other_context.close()
                 expect(cells).to_have_count(0)
@@ -200,7 +203,7 @@ def check():
                         extra_context = browser.new_context()
                         extra_contexts.append(extra_context)
                         extra_context.new_page().goto(page.url, wait_until="domcontentloaded")
-                    expect(presence.get_by_text("+9 visitantes", exact=True)).to_be_visible(timeout=20_000)
+                    expect(live_status.get_by_text("+9 visitantes", exact=True)).to_be_visible(timeout=20_000)
                     expect(count).to_have_text("0 mirando")
                     expect(cells).to_have_count(0)
                     expect(catalog_card.get_by_text("+9 visitantes", exact=True)).to_be_visible()
@@ -208,7 +211,7 @@ def check():
                 finally:
                     for extra_context in extra_contexts:
                         extra_context.close()
-                expect(presence.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=20_000)
+                expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=20_000)
                 assert not navigations, f"Presence updated after navigation: {navigations}"
                 presence.screenshot(path=str(ARTIFACTS / "presence-after-close.png"))
             finally:

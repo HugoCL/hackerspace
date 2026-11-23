@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { Doc } from "@/convex/_generated/dataModel";
+import SiteFooter from "./SiteFooter";
 
 const iconPaths = {
   alert: "M12 4l9 16H3zM12 10v5M12 17.5v.5",
@@ -73,6 +74,7 @@ export function AppShell({
           <aside className="hs-shell-aside prototype-aside">{aside}</aside>
         )}
       </div>
+      <SiteFooter />
     </div>
   );
 }

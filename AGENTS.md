@@ -53,15 +53,15 @@ Smoke checks the home page's `h1` ("Hackathones cerca de ti"), waits for the bro
 
 - **Convex.** A local deployment runs as a subprocess of `convex dev` (`CONVEX_AGENT_MODE=anonymous`, set by `scripts/dev.mjs`). State is in `.convex/` and `.env.local`, both gitignored. `pnpm dev` stays anonymous unless `CONVEX_DEPLOY_KEY` or `CONVEX_DEPLOYMENT_TOKEN` is set, or `.env.local` or `.env` selects a deployment (`CONVEX_DEPLOYMENT=` that does not start with `anonymous:`, or `CONVEX_SELF_HOSTED_*`). In anonymous mode every Convex deployment variable is removed from the children's environment, and cloud mode refuses a production key or deployment (`pnpm dev` pushes and seeds).
 - **Clerk.** The SDK is pinned to 7.7.9 for automatic keyless mode, which provisions temporary dev keys on first load outside CI. The prompt "Configure your application" is expected.
-- Until the Hackerspace Clerk app is set up, `convex/auth.config.ts` has `providers: []`, so Convex sees every user as signed out.
+- Convex already trusts the Hackerspace Clerk development issuer in `convex/auth.config.ts`. Sessions from keyless mode or a different Clerk instance are signed out in Convex unless their issuer and audience match the configured provider.
 
 ### Switch to real accounts (a human does this once)
 
 1. `npx convex login`, then point `.env.local` at a cloud dev deployment: `npx convex dev --configure=new` for a new project (stop it once it is running), or `npx convex deployment select dev` for an existing one. `pnpm dev` then detects the non-anonymous `.env.local` by itself.
-2. Claim the Clerk app from the "Configure your application" prompt (or the claim link in the `pnpm dev` log).
-3. In the Clerk Dashboard, activate the Convex integration, then copy the Frontend API URL.
-4. In `convex/auth.config.ts`, uncomment the provider and paste the URL as a literal `domain`. Do not use `process.env`: when the variable is not set on the deployment, `convex dev` exits.
-5. On Capy, put the Clerk keys in the project variables (`docs/capy.md`).
+2. Use the Hackerspace Clerk development instance, or claim a separate instance from the "Configure your application" prompt (or the claim link in the `pnpm dev` log).
+3. For a separate instance, activate the Convex integration in its Clerk Dashboard and copy the Frontend API URL (the session token issuer).
+4. In `convex/auth.config.ts`, replace the active provider's `domain` with that URL as a literal and keep `applicationID: "convex"` to match the token audience. Do not use `process.env`: when the variable is not set on the deployment, `convex dev` exits. Update the provider configuration test if changing the default issuer for the repository.
+5. Configure the Clerk keys for the same instance. On Capy, use the project variables (`docs/capy.md`).
 
 Convex Auth is the account-free alternative to Clerk. Clerk stays the default here.
 

@@ -7,7 +7,6 @@ export default function PresenceIndicator({
   count?: number;
   announce?: boolean;
 }) {
-  const overflow = Math.max(0, (count ?? 0) - cells.length);
   const label =
     count === undefined
       ? "Conectando…"
@@ -29,12 +28,6 @@ export default function PresenceIndicator({
             key={cell}
           />
         ))}
-        {overflow > 0 && (
-          <span className="ml-0.5">
-            +{overflow}
-            {count === 1001 ? "…" : ""}
-          </span>
-        )}
       </span>
       <span
         aria-live={announce ? "polite" : undefined}

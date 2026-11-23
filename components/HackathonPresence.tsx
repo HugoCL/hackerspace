@@ -159,6 +159,7 @@ export default function HackathonPresence({
     isAuthenticated && attendance && "viewers" in attendance
       ? (attendance.viewers ?? [])
       : [];
+  const hiddenViewers = (attendance?.count ?? 0) - viewers.length;
 
   return (
     <section
@@ -188,6 +189,9 @@ export default function HackathonPresence({
                 // biome-ignore lint/suspicious/noArrayIndexKey: Profile names and pictures are not unique.
                 <li key={`${index}:${name}:${image ?? ""}`}>{name}</li>
               ))}
+              {hiddenViewers > 0 && (
+                <li className="text-muted-foreground">y {hiddenViewers} más</li>
+              )}
             </ul>
           </PopoverContent>
         </Popover>

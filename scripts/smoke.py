@@ -167,9 +167,10 @@ def check():
                     other_page.screenshot(
                         path=str(ARTIFACTS / "profile-mobile.png"), full_page=True, style=clean_capture
                     )
+                    other_page.goto("about:blank", wait_until="domcontentloaded")
+                    expect(count).to_have_text("1 mirando", timeout=5_000)
                 finally:
                     other_context.close()
-                expect(count).to_have_text("1 mirando", timeout=5_000)
                 expect(cells).to_have_count(1)
                 extra_contexts = []
                 try:

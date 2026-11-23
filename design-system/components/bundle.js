@@ -643,7 +643,7 @@
 
 
   /* ---------- Footer ---------- */
-  var MORPH_WORDS = ['builders', 'dreamers', 'ai+humans', 'never settlers', 'tinkerers', 'first-timers', 'night owls', 'misfits', 'makers', 'weekend founders', 'what-if'];
+  var MORPH_WORDS = ['builders', 'dreamers', 'ai+humans', 'never settlers', 'tinkerers', 'newcomers', 'night owls', 'misfits', 'makers', 'weekend founders', 'what-if'];
   var MORPH_POOL = 'abcdefghijklmnopqrstuvwxyz+';
   function morphFrame(from, to, p) {
     var len = Math.round(from.length + (to.length - from.length) * p);

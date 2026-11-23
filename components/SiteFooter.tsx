@@ -10,7 +10,7 @@ const WORDS = [
   "ai+humans",
   "never settlers",
   "tinkerers",
-  "first-timers",
+  "newcomers",
   "night owls",
   "misfits",
   "makers",

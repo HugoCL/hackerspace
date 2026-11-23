@@ -14,7 +14,7 @@ El pie de página, y el único lugar donde el nombre se mueve: "hacker" muta a o
 | ai+humans | "ai" se teclea en seco, el "+" gira, "humans" entra suave | dos anillos que se cruzan |
 | never settlers | entra corriendo y no se queda quieta | flecha que sigue avanzando |
 | tinkerers | cada letra se atornilla girando | engranaje que rota |
-| first-timers | las letras saltan con rebote | destello |
+| newcomers | las letras saltan con rebote | destello |
 | night owls | se encienden de a una, como ventanas | ojos de búho que parpadean |
 | misfits | caen torcidas y una se queda chueca | un cuadrado entre círculos |
 | makers | se imprimen de abajo hacia arriba | martillo que golpea |

@@ -1,0 +1,22 @@
+<!-- @dsCard group="Display" height=260 -->
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Table</title>
+<style>#root{padding:var(--space-4)}</style></head>
+<body>
+<div id="root"></div>
+<script>
+var H = window.Hackerspace, h = React.createElement;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  h(H.Table,{caption:'Resultados',columns:[
+      {key:'pos',label:'#',width:40,numeric:true},
+      {key:'team',label:'Equipo',render:function(r){return h(H.Stack,{direction:'row',gap:2,align:'center'}, h(H.AvatarStack,{people:r.people,size:'xs'}), r.team);}},
+      {key:'award',label:'Premio',render:function(r){return r.award? h(H.Badge,{tone:'signal',icon:'trophy'},r.award):null;}},
+      {key:'votes',label:'Votos',align:'right',numeric:true}],
+    rows:[
+      {id:1,pos:1,team:'Los Compiladores',people:['Camila Rojas','Diego Muñoz'],award:'1er lugar',votes:128},
+      {id:2,pos:2,team:'Agua Clara',people:['Ana Pérez','Tomás Vera','Sofía Lagos'],award:'Mejor uso de datos',votes:97},
+      {id:3,pos:3,team:'MicroBus',people:['Iván Soto'],votes:41}]}));
+</script>
+</body>
+</html>

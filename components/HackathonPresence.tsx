@@ -194,9 +194,11 @@ export default function HackathonPresence({
                 </span>
               )}
             </PopoverTrigger>
-            <PopoverContent className="hs-card z-10">
-              <PopoverTitle>Personas mirando</PopoverTitle>
-              <ul className="mt-2 grid gap-1 text-sm">
+            <PopoverContent className="hs-popover">
+              <PopoverTitle className="hs-popover-title">
+                Personas mirando
+              </PopoverTitle>
+              <ul className="grid gap-1 text-sm">
                 {viewers.map(({ name, image }, index) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: Profile names and pictures are not unique.
                   <li key={`${index}:${name}:${image ?? ""}`}>{name}</li>

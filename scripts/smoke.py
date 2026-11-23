@@ -126,6 +126,9 @@ def check():
                 expect(
                     page.get_by_role("heading", name="Código sin Fronteras", level=1)
                 ).to_be_visible()
+                breadcrumb = page.get_by_role("navigation", name="Ruta de navegación")
+                expect(breadcrumb.get_by_role("link", name="Explorar")).to_have_attribute("href", "/")
+                expect(breadcrumb.locator('[aria-current="page"]')).to_have_text("Perfil de hackathon")
                 sidebar = page.get_by_role("complementary")
                 expect(page.get_by_role("region", name="Datos del evento")).to_contain_text(
                     "En línea"

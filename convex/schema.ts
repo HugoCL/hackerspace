@@ -45,13 +45,18 @@ export default defineSchema({
     hackathonId: v.id("hackathons"),
     ownerId: v.id("users"),
     ...teamDetails.fields,
+    searchableRoles: v.optional(v.string()),
   })
     .index("by_hackathonId_and_recruitingStatus", [
       "hackathonId",
       "recruitingStatus",
     ])
     .index("by_hackathonId", ["hackathonId"])
-    .index("by_ownerId", ["ownerId"]),
+    .index("by_ownerId", ["ownerId"])
+    .searchIndex("search_searchableRoles", {
+      searchField: "searchableRoles",
+      filterFields: ["hackathonId", "recruitingStatus"],
+    }),
   teamMembers: defineTable({
     teamId: v.id("teams"),
     userId: v.id("users"),

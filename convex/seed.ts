@@ -50,6 +50,7 @@ export const seeders: Record<TableNames, Seeder> = {
         name,
         description,
         rolesWanted: [...rolesWanted],
+        searchableRoles: rolesWanted.join(" "),
         recruitingStatus: "recruiting",
       });
       await ctx.db.insert("teamMembers", {

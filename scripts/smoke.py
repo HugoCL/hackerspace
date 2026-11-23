@@ -127,7 +127,7 @@ def check():
                     page.get_by_role("heading", name="Código sin Fronteras", level=1)
                 ).to_be_visible()
                 sidebar = page.get_by_role("complementary")
-                expect(sidebar.get_by_role("region", name="Datos del evento")).to_contain_text(
+                expect(page.get_by_role("region", name="Datos del evento")).to_contain_text(
                     "En línea"
                 )
                 presence = page.get_by_role("region", name="Presencia en vivo")
@@ -141,16 +141,35 @@ def check():
                     "(dot) => getComputedStyle(dot, '::after').content"
                 ) == "none"
                 expect(presence.get_by_role("button", name="Ver quién está mirando")).to_have_count(0)
-                teams = sidebar.get_by_role("region", name="Equipos", exact=True)
+                summary = sidebar.get_by_role("region", name="Resumen de equipos")
+                expect(summary).to_contain_text("2 equipos buscan gente")
+                summary.get_by_role("link", name="Ver equipos").click()
+                expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras?tab=equipos")
+                expect(sidebar).not_to_be_visible()
+                expect(page.get_by_role("tab", name="Equipos (2)")).to_have_attribute("aria-selected", "true")
+                teams = page.get_by_role("region", name="Equipos", exact=True)
                 expect(teams.get_by_role("listitem")).to_have_count(2)
                 expect(teams.get_by_role("button", name="Inicia sesión para participar")).to_be_visible()
                 recruiting_filter = teams.get_by_role("checkbox", name="Solo equipos que buscan integrantes")
                 recruiting_filter.click()
                 expect(recruiting_filter).to_be_checked()
                 expect(teams.get_by_role("listitem")).to_have_count(2)
+                role_filter = teams.get_by_role("textbox", name="Filtrar por rol")
+                role_filter.fill("Frontend")
+                expect(teams.get_by_role("listitem")).to_have_count(1)
+                expect(teams.get_by_role("heading", name="Punto de Encuentro")).to_be_visible()
+                role_filter.clear()
+                expect(teams.get_by_role("listitem")).to_have_count(2)
                 teams.screenshot(path=str(ARTIFACTS / "teams-recruiting.png"))
+                clean_capture = "#clerk-components, nextjs-portal { visibility: hidden; }"
+                page.screenshot(path=str(ARTIFACTS / "teams-desktop.png"), full_page=True, style=clean_capture)
+                page.set_viewport_size({"width": 390, "height": 844})
+                page.screenshot(path=str(ARTIFACTS / "teams-mobile.png"), full_page=True, style=clean_capture)
+                page.set_viewport_size({"width": 1280, "height": 720})
+                page.get_by_role("tab", name="Resumen").click()
                 page.get_by_role("link", name="Ver bases", exact=True).click()
-                expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras#bases")
+                expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras?tab=bases")
+                expect(page.get_by_role("tabpanel", name="Bases y reglas")).to_be_visible()
                 navigations = []
                 page.on(
                     "framenavigated",

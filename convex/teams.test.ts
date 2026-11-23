@@ -51,6 +51,16 @@ it("lists teams publicly, filters recruiting teams, and only lets the owner edit
   expect((await t.query(api.teams.list, listArgs)).page).toEqual([
     { _id: teamId, ...details },
   ]);
+  expect(await t.query(api.teams.summary, { hackathonId })).toEqual({
+    total: 1,
+    recruiting: 1,
+  });
+  expect(
+    (await t.query(api.teams.list, { ...listArgs, role: "Frontend" })).page,
+  ).toMatchObject([{ _id: teamId }]);
+  expect(
+    (await t.query(api.teams.list, { ...listArgs, role: "Backend" })).page,
+  ).toEqual([]);
   await expect(
     outsider.mutation(api.teams.update, { teamId, ...details }),
   ).rejects.toThrow("Solo el titular");
@@ -60,6 +70,10 @@ it("lists teams publicly, filters recruiting teams, and only lets the owner edit
     recruitingStatus: "closed",
   });
   expect((await t.query(api.teams.list, listArgs)).page).toEqual([]);
+  expect(await t.query(api.teams.summary, { hackathonId })).toEqual({
+    total: 1,
+    recruiting: 0,
+  });
   expect(
     (await t.query(api.teams.list, { ...listArgs, recruitingOnly: false }))
       .page,

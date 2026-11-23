@@ -62,7 +62,13 @@ function normalizeDetails(details: Infer<typeof teamDetails>) {
   if (rolesWanted.length > 8 || rolesWanted.some((role) => role.length > 40)) {
     throw new ConvexError("Agrega hasta 8 roles de 40 caracteres cada uno.");
   }
-  return { ...details, name, description, rolesWanted };
+  return {
+    ...details,
+    name,
+    description,
+    rolesWanted,
+    searchableRoles: rolesWanted.join(" "),
+  };
 }
 
 async function membership(
@@ -96,20 +102,35 @@ export const list = query({
   args: {
     hackathonId: v.id("hackathons"),
     recruitingOnly: v.boolean(),
+    role: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
-  handler: async (ctx, { hackathonId, recruitingOnly, paginationOpts }) => {
+  handler: async (
+    ctx,
+    { hackathonId, recruitingOnly, role, paginationOpts },
+  ) => {
     const teams = ctx.db.query("teams");
-    const page = await (recruitingOnly
-      ? teams.withIndex("by_hackathonId_and_recruitingStatus", (q) =>
-          q.eq("hackathonId", hackathonId).eq("recruitingStatus", "recruiting"),
-        )
-      : teams.withIndex("by_hackathonId", (q) =>
-          q.eq("hackathonId", hackathonId),
-        )
-    )
-      .order("desc")
-      .paginate(paginationOpts);
+    const roleSearch = role?.trim().slice(0, 40);
+    const page = await (roleSearch
+      ? teams.withSearchIndex("search_searchableRoles", (q) => {
+          const search = q
+            .search("searchableRoles", roleSearch)
+            .eq("hackathonId", hackathonId);
+          return recruitingOnly
+            ? search.eq("recruitingStatus", "recruiting")
+            : search;
+        })
+      : (recruitingOnly
+          ? teams.withIndex("by_hackathonId_and_recruitingStatus", (q) =>
+              q
+                .eq("hackathonId", hackathonId)
+                .eq("recruitingStatus", "recruiting"),
+            )
+          : teams.withIndex("by_hackathonId", (q) =>
+              q.eq("hackathonId", hackathonId),
+            )
+        ).order("desc")
+    ).paginate(paginationOpts);
     return {
       ...page,
       page: page.page.map(
@@ -122,6 +143,25 @@ export const list = query({
         }),
       ),
     };
+  },
+});
+
+export const summary = query({
+  args: { hackathonId: v.id("hackathons") },
+  handler: async (ctx, { hackathonId }) => {
+    const [all, recruiting] = await Promise.all([
+      ctx.db
+        .query("teams")
+        .withIndex("by_hackathonId", (q) => q.eq("hackathonId", hackathonId))
+        .take(1001),
+      ctx.db
+        .query("teams")
+        .withIndex("by_hackathonId_and_recruitingStatus", (q) =>
+          q.eq("hackathonId", hackathonId).eq("recruitingStatus", "recruiting"),
+        )
+        .take(1001),
+    ]);
+    return { total: all.length, recruiting: recruiting.length };
   },
 });
 

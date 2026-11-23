@@ -256,33 +256,46 @@ export default function HackathonTeams({
 }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const [recruitingOnly, setRecruitingOnly] = useState(false);
+  const [role, setRole] = useState("");
   const [creating, setCreating] = useState(false);
   const filterId = useId();
   const create = useMutation(api.teams.create);
   const { results, status, loadMore } = usePaginatedQuery(
     api.teams.list,
-    { hackathonId, recruitingOnly },
+    { hackathonId, recruitingOnly, role: role.trim() || undefined },
     { initialNumItems: 10 },
   );
 
   return (
-    <section aria-labelledby="event-teams" className="hs-card">
+    <section aria-labelledby="event-teams" className="hs-section">
       <h2 className="hs-section-title" id="event-teams">
         Equipos
       </h2>
-      <label
-        className="mb-3 flex items-center gap-2 text-sm"
-        htmlFor={filterId}
-      >
-        <Checkbox
-          checked={recruitingOnly}
-          id={filterId}
-          onCheckedChange={(value) => setRecruitingOnly(value === true)}
+      <div className="flex flex-wrap items-end gap-4">
+        <label className="grid gap-1 text-sm" htmlFor={`${filterId}-role`}>
+          Filtrar por rol
+          <Input
+            className="hs-input"
+            id={`${filterId}-role`}
+            maxLength={40}
+            value={role}
+            onChange={(event) => setRole(event.currentTarget.value)}
+          />
+        </label>
+        <label
+          className="mb-3 flex items-center gap-2 text-sm"
+          htmlFor={filterId}
         >
-          <CheckboxIndicator aria-hidden="true">✓</CheckboxIndicator>
-        </Checkbox>
-        Solo equipos que buscan integrantes
-      </label>
+          <Checkbox
+            checked={recruitingOnly}
+            id={filterId}
+            onCheckedChange={(value) => setRecruitingOnly(value === true)}
+          >
+            <CheckboxIndicator aria-hidden="true">✓</CheckboxIndicator>
+          </Checkbox>
+          Solo equipos que buscan integrantes
+        </label>
+      </div>
       {isAuthenticated ? (
         creating ? (
           <TeamForm
@@ -312,17 +325,19 @@ export default function HackathonTeams({
         </p>
       ) : results.length === 0 ? (
         <p className="mt-3" role="status">
-          {recruitingOnly
-            ? "No hay equipos buscando integrantes."
-            : "Aún no hay equipos en esta hackathon."}
+          {role.trim()
+            ? "No encontramos equipos para ese rol."
+            : recruitingOnly
+              ? "No hay equipos buscando integrantes."
+              : "Aún no hay equipos en esta hackathon."}
         </p>
       ) : (
-        <ul className="mt-3 grid gap-3" aria-label="Equipos de la hackathon">
+        <ul
+          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          aria-label="Equipos de la hackathon"
+        >
           {results.map((team) => (
-            <li
-              className="grid gap-2 border-border border-t pt-3"
-              key={team._id}
-            >
+            <li className="hs-card grid content-start gap-2" key={team._id}>
               <h3 className="hs-tcard-title">{team.name}</h3>
               <p className="text-sm">{team.description}</p>
               <span className="hs-badge hs-badge--neutral justify-self-start">

@@ -159,7 +159,8 @@ export default function HackathonPresence({
     isAuthenticated && attendance && "viewers" in attendance
       ? (attendance.viewers ?? [])
       : [];
-  const hiddenViewers = (attendance?.count ?? 0) - viewers.length;
+  const count = attendance?.count ?? 0;
+  const hiddenViewers = count - viewers.length;
 
   return (
     <section
@@ -190,7 +191,11 @@ export default function HackathonPresence({
                 <li key={`${index}:${name}:${image ?? ""}`}>{name}</li>
               ))}
               {hiddenViewers > 0 && (
-                <li className="text-muted-foreground">y {hiddenViewers} más</li>
+                <li className="text-muted-foreground">
+                  {count > 1000
+                    ? "y muchas personas más"
+                    : `y ${hiddenViewers} más`}
+                </li>
               )}
             </ul>
           </PopoverContent>

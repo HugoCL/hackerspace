@@ -169,7 +169,7 @@ def check():
                     )
                 finally:
                     other_context.close()
-                expect(count).to_have_text("1 mirando", timeout=20_000)
+                expect(count).to_have_text("1 mirando", timeout=5_000)
                 expect(cells).to_have_count(1)
                 extra_contexts = []
                 try:

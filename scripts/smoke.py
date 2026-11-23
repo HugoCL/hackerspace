@@ -167,6 +167,18 @@ def check():
                     other_context.close()
                 expect(count).to_have_text("1 mirando", timeout=20_000)
                 expect(cells).to_have_count(1)
+                extra_contexts = []
+                try:
+                    for _ in range(8):
+                        extra_context = browser.new_context()
+                        extra_contexts.append(extra_context)
+                        extra_context.new_page().goto(page.url, wait_until="domcontentloaded")
+                    expect(presence).to_have_text("9 mirando", timeout=20_000)
+                    expect(cells).to_have_count(8)
+                finally:
+                    for extra_context in extra_contexts:
+                        extra_context.close()
+                expect(count).to_have_text("1 mirando", timeout=20_000)
                 assert not navigations, f"Presence updated after navigation: {navigations}"
                 presence.screenshot(path=str(ARTIFACTS / "presence-after-close.png"))
             finally:

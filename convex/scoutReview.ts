@@ -107,6 +107,10 @@ export const queue = query({
         return {
           _id: candidate._id,
           proposal: candidate.proposal,
+          dates: displayDates(
+            candidate.proposal.startsOn,
+            candidate.proposal.endsOn,
+          ),
           provenance: candidate.provenance,
           discoveredFromUrl: candidate.discoveredFromUrl,
           discoveredAt: candidate.discoveredAt,
@@ -115,7 +119,10 @@ export const queue = query({
             ? {
                 title: other.proposal.title,
                 officialUrl: other.proposal.officialUrl,
-                startsOn: other.proposal.startsOn,
+                dates: displayDates(
+                  other.proposal.startsOn,
+                  other.proposal.endsOn,
+                ),
               }
             : null,
           publishedMatch: match && {

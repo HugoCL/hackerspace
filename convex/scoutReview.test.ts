@@ -133,7 +133,7 @@ it("shows each pending candidate with its sources, missing fields and duplicates
   expect(newest.possibleDuplicateOf).toEqual({
     title: "Santiago Hacks 2027",
     officialUrl,
-    startsOn: undefined,
+    dates: undefined,
   });
   expect(sameTitleAsSample.publishedMatch).toEqual({
     reason: "sameTitle",

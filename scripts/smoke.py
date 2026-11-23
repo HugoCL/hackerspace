@@ -115,8 +115,13 @@ def check():
                 expect(page.get_by_role("heading", name="No encontramos hackathones")).to_be_visible()
                 page.get_by_role("button", name="Limpiar búsqueda").click()
                 event_card = page.get_by_role("link", name="Código sin Fronteras", exact=False)
-                expect(event_card.get_by_text("0 mirando", exact=True)).to_be_visible()
-                expect(event_card.locator("[data-filled]")).to_have_count(8)
+                compact_pill = event_card.locator(".hs-presence--sm")
+                expect(compact_pill).to_have_text("0 viendo")
+                compact_pill.screenshot(path=str(ARTIFACTS / "catalog-presence-pill.png"))
+                page.screenshot(
+                    path=str(ARTIFACTS / "catalog-desktop.png"), full_page=True,
+                    style="#clerk-components, nextjs-portal { visibility: hidden; }",
+                )
                 event_card.click()
                 expect(
                     page.get_by_role("heading", name="Código sin Fronteras", level=1)
@@ -127,11 +132,14 @@ def check():
                 )
                 presence = page.get_by_role("region", name="Presencia en vivo")
                 live_status = presence.locator("[aria-live=polite]")
-                count = live_status.get_by_text("0 mirando", exact=True)
-                cells = presence.locator("[data-filled=true]")
-                expect(count).to_have_text("0 mirando")
+                pill = live_status.locator(".hs-presence")
+                count = pill.locator(".hs-presence-count")
+                expect(pill.get_by_text("En vivo", exact=True)).to_be_visible()
+                expect(count).to_have_text("0 viendo")
                 expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible()
-                expect(cells).to_have_count(0)
+                assert pill.locator(".hs-presence-dot").evaluate(
+                    "(dot) => getComputedStyle(dot, '::after').content"
+                ) == "none"
                 expect(presence.get_by_role("button", name="Ver quién está mirando")).to_have_count(0)
                 teams = sidebar.get_by_role("region", name="Equipos", exact=True)
                 expect(teams.get_by_role("listitem")).to_have_count(2)
@@ -163,11 +171,9 @@ def check():
                     other_page.on("pageerror", lambda err: page_errors.append(str(err)))
                     other_page.goto(page.url, wait_until="domcontentloaded")
                     expect(live_status.get_by_text("+2 visitantes", exact=True)).to_be_visible()
-                    expect(count).to_have_text("0 mirando")
-                    expect(cells).to_have_count(0)
+                    expect(count).to_have_text("0 viendo")
                     expect(catalog_card.get_by_text("+2 visitantes", exact=True)).to_be_visible()
-                    expect(catalog_card.get_by_text("0 mirando", exact=True)).to_be_visible()
-                    expect(catalog_card.locator("[data-filled=true]")).to_have_count(0)
+                    expect(catalog_card.locator(".hs-presence--sm")).to_have_text("0 viendo")
                     clean_capture = "#clerk-components, nextjs-portal { visibility: hidden; }"
                     catalog_card.screenshot(
                         path=str(ARTIFACTS / "catalog-live-viewers.png"),
@@ -181,8 +187,8 @@ def check():
                     expect(other_presence.locator("[aria-live=polite]").get_by_text(
                         "+2 visitantes", exact=True
                     )).to_be_visible()
-                    expect(other_presence.locator("[data-filled=false]").first).to_have_css(
-                        "transition-property", "none"
+                    expect(other_presence.locator(".hs-presence-count")).to_have_css(
+                        "animation-name", "none"
                     )
                     other_presence.screenshot(path=str(ARTIFACTS / "presence-mobile.png"))
                     page.screenshot(
@@ -195,7 +201,7 @@ def check():
                     expect(live_status.get_by_text("+1 visitante", exact=True)).to_be_visible(timeout=5_000)
                 finally:
                     other_context.close()
-                expect(cells).to_have_count(0)
+                expect(count).to_have_text("0 viendo")
                 expect(catalog_card.get_by_text("+1 visitante", exact=True)).to_be_visible()
                 extra_contexts = []
                 try:
@@ -204,10 +210,9 @@ def check():
                         extra_contexts.append(extra_context)
                         extra_context.new_page().goto(page.url, wait_until="domcontentloaded")
                     expect(live_status.get_by_text("+9 visitantes", exact=True)).to_be_visible(timeout=20_000)
-                    expect(count).to_have_text("0 mirando")
-                    expect(cells).to_have_count(0)
+                    expect(count).to_have_text("0 viendo")
                     expect(catalog_card.get_by_text("+9 visitantes", exact=True)).to_be_visible()
-                    expect(catalog_card.get_by_text("0 mirando", exact=True)).to_be_visible()
+                    expect(catalog_card.locator(".hs-presence--sm")).to_have_text("0 viendo")
                 finally:
                     for extra_context in extra_contexts:
                         extra_context.close()
@@ -227,7 +232,7 @@ def check():
         return 1
     print(
         f"PASS: {URL} connected to Convex, filtered events and opened a hackathon profile; "
-        "profile and catalog visitors changed 1 → 2 → 1 without filling the account grid; "
+        "profile and catalog visitors changed 1 → 2 → 1 without changing the account pill; "
         "screenshot at artifacts/smoke.png"
     )
     return 0

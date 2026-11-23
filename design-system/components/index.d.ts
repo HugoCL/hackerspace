@@ -5,7 +5,7 @@ type Person = string | { name: string; src?: string; online?: boolean };
 export type IconName = 'search' | 'pin' | 'calendar' | 'users' | 'heart' | 'plus' | 'bell' | 'bot' | 'trophy' | 'globe' | 'arrow' | 'menu' | 'code' | 'check' | 'x' | 'chevron' | 'info' | 'alert' | 'more';
 
 /* Layout */
-export interface AppShellProps { nav?: { label: string; href?: string; active?: boolean; count?: number }[]; actions?: React.ReactNode; banner?: React.ReactNode; aside?: React.ReactNode; homeHref?: string; className?: string; children?: React.ReactNode }
+export interface AppShellProps { nav?: { label: string; href?: string; active?: boolean; count?: number }[]; actions?: React.ReactNode; banner?: React.ReactNode; aside?: React.ReactNode; footer?: React.ReactNode; homeHref?: string; className?: string; children?: React.ReactNode }
 export declare function AppShell(props: AppShellProps): React.ReactElement;
 export interface PageHeaderProps { eyebrow?: React.ReactNode; title: React.ReactNode; description?: React.ReactNode; meta?: React.ReactNode; actions?: React.ReactNode; className?: string }
 export declare function PageHeader(props: PageHeaderProps): React.ReactElement;
@@ -114,6 +114,10 @@ export declare function Menu(props: MenuProps): React.ReactElement;
 export interface PopoverProps { label: React.ReactNode; title?: string; align?: 'start' | 'end'; trigger?: ButtonProps; className?: string; children?: React.ReactNode | ((close: () => void) => React.ReactNode) }
 export declare function Popover(props: PopoverProps): React.ReactElement;
 
+/* Footer */
+export interface FooterProps { tagline?: React.ReactNode; columns?: { title: React.ReactNode; links: { label: React.ReactNode; href?: string }[] }[]; note?: React.ReactNode; /** Words that replace "hacker". */ words?: string[]; /** Return to "hackerspace" after this many words. Default 3. */ joinEvery?: number; /** false keeps the name still. */ animate?: boolean; className?: string }
+export declare function Footer(props: FooterProps): React.ReactElement;
+
 declare global { interface Window { Hackerspace: {
   AppShell: typeof AppShell; PageHeader: typeof PageHeader; Section: typeof Section; Stack: typeof Stack; Grid: typeof Grid;
   Button: typeof Button; Tabs: typeof Tabs; Input: typeof Input; Select: typeof Select; Icon: typeof Icon;
@@ -121,5 +125,5 @@ declare global { interface Window { Hackerspace: {
   PresencePill: typeof PresencePill; Countdown: typeof Countdown; AgentTag: typeof AgentTag; ActivityFeed: typeof ActivityFeed; TeamSlots: typeof TeamSlots;
   HackathonCard: typeof HackathonCard; TeamCard: typeof TeamCard; ProjectCard: typeof ProjectCard;
   Checkbox: typeof Checkbox; RadioGroup: typeof RadioGroup; Switch: typeof Switch; Textarea: typeof Textarea; SegmentedControl: typeof SegmentedControl; Separator: typeof Separator; Skeleton: typeof Skeleton; Progress: typeof Progress; Table: typeof Table; Accordion: typeof Accordion; Alert: typeof Alert; Tooltip: typeof Tooltip; Toaster: typeof Toaster; Breadcrumb: typeof Breadcrumb; Pagination: typeof Pagination; Dialog: typeof Dialog; Drawer: typeof Drawer; Menu: typeof Menu; Popover: typeof Popover;
-  toast: typeof toast; dismissToast: typeof dismissToast;
+  toast: typeof toast; dismissToast: typeof dismissToast; Footer: typeof Footer;
 } } }

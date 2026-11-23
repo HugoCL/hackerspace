@@ -125,6 +125,10 @@ it("keeps messages private and lets only the owner add a member exactly once", a
   });
   const inbox = { teamId, paginationOpts };
   const history = { conversationId, paginationOpts };
+  expect(await t.query(api.teams.conversationContact, { teamId })).toBeNull();
+  expect(await outsider.query(api.teams.conversationContact, { teamId })).toBe(
+    "Andrea",
+  );
   expect(
     (await owner.query(api.teams.conversations, inbox)).page,
   ).toMatchObject([

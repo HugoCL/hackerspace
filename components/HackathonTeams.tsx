@@ -221,11 +221,13 @@ function ChatHeader({
   contact,
   onBack,
   action,
+  thread = false,
 }: {
   team: string;
   contact?: string;
   onBack?: () => void;
   action?: React.ReactNode;
+  thread?: boolean;
 }) {
   return (
     <header className="shrink-0 border-b border-border bg-[var(--hs-surface)] p-4">
@@ -245,7 +247,7 @@ function ChatHeader({
             {team}
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
-            {contact ? "Conversación privada" : "Conversaciones"}
+            {thread ? "Conversación privada" : "Conversaciones"}
           </p>
         </div>
         <DialogClose aria-label="Cerrar" className={chatIconClass}>
@@ -280,6 +282,10 @@ function TeamConversation({
   const conversationId = initialId ?? startedId;
   const args = conversationId ? { conversationId } : "skip";
   const conversation = useQuery(api.teams.conversation, args);
+  const prospectContact = useQuery(
+    api.teams.conversationContact,
+    conversationId ? "skip" : { teamId: team._id },
+  );
   const messages = usePaginatedQuery(api.teams.messages, args, {
     initialNumItems: 20,
   });
@@ -292,7 +298,10 @@ function TeamConversation({
   const history = useRef<HTMLDivElement>(null);
   const newest = messages.results[0]?._id;
   const olderHeight = useRef<number | null>(null);
-  const unavailable = !!conversationId && !conversation;
+  const unavailable =
+    conversation === null ||
+    prospectContact === null ||
+    (!!conversationId && !startedId && conversation === undefined);
 
   useLayoutEffect(() => {
     const pane = history.current;
@@ -324,10 +333,9 @@ function TeamConversation({
     <>
       <ChatHeader
         team={team.name}
-        contact={
-          conversation?.displayName ?? (conversationId ? undefined : team.name)
-        }
+        contact={conversation?.displayName ?? prospectContact ?? undefined}
         onBack={onBack}
+        thread
         action={
           conversation?.canAdd && conversationId ? (
             <Button
@@ -360,7 +368,7 @@ function TeamConversation({
       >
         {unavailable ? (
           <p className="m-auto text-sm text-muted-foreground" role="status">
-            {conversation === null
+            {conversation === null || prospectContact === null
               ? "No tienes acceso a esta conversación."
               : "Cargando conversación…"}
           </p>

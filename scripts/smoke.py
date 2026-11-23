@@ -113,6 +113,7 @@ def check():
                 expect(page.get_by_role("heading", name="No encontramos hackathones")).to_be_visible()
                 page.get_by_role("button", name="Limpiar búsqueda").click()
                 event_card = page.get_by_role("link", name="Código sin Fronteras", exact=False)
+                expect(event_card.get_by_text("0 mirando", exact=True)).to_be_visible()
                 expect(event_card.locator("[data-filled]")).to_have_count(8)
                 event_card.click()
                 expect(

@@ -117,7 +117,17 @@
     var st = React.useState(props.defaultValue || (items[0] && items[0].value));
     var value = props.value != null ? props.value : st[0];
     function pick(v) { st[1](v); if (props.onChange) props.onChange(v); }
-    return h('div', { className: cx('hs-tabs', props.className), role: 'tablist', 'aria-label': props.label },
+    function onKey(e) {
+      var i = items.findIndex(function (it) { return it.value === value; });
+      var n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : -1;
+      if (n < 0 && e.key !== 'ArrowLeft') return;
+      n = (n + items.length) % items.length;
+      e.preventDefault();
+      pick(items[n].value);
+      var tabs = e.currentTarget.querySelectorAll('[role="tab"]');
+      if (tabs[n]) tabs[n].focus();
+    }
+    return h('div', { className: cx('hs-tabs', props.className), role: 'tablist', 'aria-label': props.label, onKeyDown: onKey },
       items.map(function (it) {
         var on = it.value === value;
         return h('button', {
@@ -218,11 +228,11 @@
   /* ---------- Live ---------- */
   function PresencePill(props) {
     var n = props.count || 0;
-    var label = props.label || (n === 1 ? 'viendo' : 'viendo');
+    var label = props.label || 'viendo';
     return h('span', { className: cx('hs-presence', props.size === 'sm' && 'hs-presence--sm', props.className), role: 'status', 'aria-live': 'polite' },
       h('span', { className: 'hs-presence-dot', 'aria-hidden': true }),
-      props.live === false ? null : h('span', { className: 'hs-presence-live' }, 'EN VIVO'),
-      h('span', { className: 'hs-presence-count' }, n + ' ' + label.toUpperCase()),
+      props.live === false ? null : h('span', { className: 'hs-presence-live' }, 'En vivo'),
+      h('span', { className: 'hs-presence-count', key: n }, n + ' ' + label),
       props.people && props.people.length ? h(AvatarStack, { people: props.people, max: 3, total: n, size: 'xs' }) : null);
   }
 
@@ -239,13 +249,13 @@
     var txt = (d ? d + 'd ' : '') + pad(hh) + ':' + pad(mm) + ':' + pad(ss);
     return h('span', { className: cx('hs-countdown', left === 0 && 'hs-countdown--done', props.className) },
       props.label ? h('span', { className: 'hs-countdown-label' }, props.label) : null,
-      h('time', { className: 'hs-countdown-time' }, left === 0 ? (props.doneLabel || 'YA COMENZÓ') : txt));
+      h('time', { className: 'hs-countdown-time' }, left === 0 ? (props.doneLabel || 'Ya comenzó') : txt));
   }
 
   function AgentTag(props) {
     return h('span', { className: cx('hs-agent', props.className), title: props.title },
       h(Icon, { name: 'bot', size: 12 }),
-      'AGENTE', props.name ? h('span', { className: 'hs-agent-name' }, '· ' + props.name) : null);
+      'agente', props.name ? ' ' + props.name : null);
   }
 
   function ActivityFeed(props) {
@@ -277,7 +287,7 @@
     return h('div', { className: cx('hs-slots', props.className) },
       h('div', { className: 'hs-slots-row', role: 'img', 'aria-label': members.length + ' de ' + size + ' integrantes' }, slots),
       h('span', { className: cx('hs-slots-label', free === 0 && 'hs-slots-label--full') },
-        free === 0 ? 'EQUIPO COMPLETO' : free + (free === 1 ? ' LUGAR LIBRE' : ' LUGARES LIBRES')));
+        free === 0 ? 'Equipo completo' : free + (free === 1 ? ' lugar libre' : ' lugares libres')));
   }
 
   /* ---------- Domain cards ---------- */

@@ -124,11 +124,14 @@ def check():
                 count = presence.locator("[aria-live=polite]")
                 expect(count).to_have_text("1 persona")
                 expect(presence.get_by_role("list")).to_have_count(0)
-                expect(
-                    sidebar.get_by_role("region", name="Equipos buscando gente").get_by_role(
-                        "listitem"
-                    )
-                ).to_have_count(2)
+                teams = sidebar.get_by_role("region", name="Equipos", exact=True)
+                expect(teams.get_by_role("listitem")).to_have_count(2)
+                expect(teams.get_by_role("button", name="Inicia sesión para participar")).to_be_visible()
+                recruiting_filter = teams.get_by_role("checkbox", name="Solo equipos que buscan integrantes")
+                recruiting_filter.click()
+                expect(recruiting_filter).to_be_checked()
+                expect(teams.get_by_role("listitem")).to_have_count(2)
+                teams.screenshot(path=str(ARTIFACTS / "teams-recruiting.png"))
                 page.get_by_role("link", name="Ver bases", exact=True).click()
                 expect(page).to_have_url(f"{URL}/hackathons/codigo-sin-fronteras#bases")
                 navigations = []
@@ -138,10 +141,18 @@ def check():
                 )
                 other_context = browser.new_context(viewport={"width": 390, "height": 844})
                 try:
+                    catalog_page = browser.new_page()
+                    catalog_page.on("pageerror", lambda err: page_errors.append(str(err)))
+                    catalog_page.goto(URL, wait_until="domcontentloaded")
+                    catalog_page.get_by_role("tab", name="Virtuales").click()
+                    catalog_card = catalog_page.get_by_role("link", name="Código sin Fronteras", exact=False)
+                    expect(catalog_card).to_contain_text("1 persona viendo")
                     other_page = other_context.new_page()
                     other_page.on("pageerror", lambda err: page_errors.append(str(err)))
                     other_page.goto(page.url, wait_until="domcontentloaded")
                     expect(count).to_have_text("2 personas")
+                    expect(catalog_card).to_contain_text("2 personas viendo")
+                    catalog_card.screenshot(path=str(ARTIFACTS / "catalog-live-viewers.png"))
                     presence.screenshot(path=str(ARTIFACTS / "presence-two-viewers.png"))
                     other_presence = other_page.get_by_role("region", name="Viendo ahora")
                     expect(other_presence.locator("[aria-live=polite]")).to_have_text("2 personas")
@@ -149,6 +160,7 @@ def check():
                 finally:
                     other_context.close()
                 expect(count).to_have_text("1 persona", timeout=20_000)
+                expect(catalog_card).to_contain_text("1 persona viendo")
                 assert not navigations, f"Presence updated after navigation: {navigations}"
                 presence.screenshot(path=str(ARTIFACTS / "presence-after-close.png"))
             finally:
@@ -164,7 +176,7 @@ def check():
         return 1
     print(
         f"PASS: {URL} connected to Convex, filtered events and opened a hackathon profile; "
-        "live viewer count changed 1 → 2 → 1 without reloading; "
+        "live viewer count on the profile and catalog changed 1 → 2 → 1 without reloading; "
         "screenshot at artifacts/smoke.png"
     )
     return 0

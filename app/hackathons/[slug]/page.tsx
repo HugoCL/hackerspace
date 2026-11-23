@@ -3,14 +3,10 @@ import { fetchQuery } from "convex/nextjs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import HackathonPresence from "@/components/HackathonPresence";
+import HackathonTeams from "@/components/HackathonTeams";
 import { AppShell, EventMeta, ModalityBadge } from "@/components/hackathon-ui";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
-
-const sampleTeams = [
-  { name: "Punto de Encuentro", roles: ["Frontend", "Diseño"] },
-  { name: "Ruta Abierta", roles: ["Datos", "Backend"] },
-];
 
 function ProfileSidebar({ event }: { event: Doc<"hackathons"> }) {
   const officialUrl =
@@ -52,27 +48,7 @@ function ProfileSidebar({ event }: { event: Doc<"hackathons"> }) {
         </Button>
       </section>
       <HackathonPresence hackathonId={event._id} />
-      <section aria-labelledby="sample-teams" className="hs-card">
-        <h2 className="hs-section-title" id="sample-teams">
-          Equipos buscando gente
-        </h2>
-        <p className="hs-pagehead-desc text-sm">Equipos de ejemplo</p>
-        <ul className="flex flex-col gap-2">
-          {sampleTeams.map(({ name, roles }) => (
-            <li className="border-border border-t pt-2" key={name}>
-              <h3 className="font-semibold">{name}</h3>
-              <div className="hs-tcard-looking">
-                <span className="hs-tcard-looking-label">Buscan</span>
-                {roles.map((role) => (
-                  <span className="hs-badge hs-badge--signal" key={role}>
-                    {role}
-                  </span>
-                ))}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <HackathonTeams hackathonId={event._id} />
     </>
   );
 }

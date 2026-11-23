@@ -16,7 +16,7 @@ it("can seed repeatedly without duplicating sample data", async () => {
   const t = convexTest(schema, modules);
 
   await expect(t.mutation(internal.seed.ensure, {})).resolves.toEqual({
-    seeded: ["hackathons"],
+    seeded: ["hackathons", "teams"],
   });
   await expect(t.mutation(internal.seed.ensure, {})).resolves.toEqual({
     seeded: [],
@@ -35,7 +35,13 @@ it("can reset a local deployment", async () => {
 
   try {
     await expect(t.mutation(internal.seed.reset, {})).resolves.toEqual({
-      reset: ["hackathons"],
+      reset: [
+        "hackathons",
+        "users",
+        "teams",
+        "teamMembers",
+        "teamJoinRequests",
+      ],
     });
   } finally {
     vi.unstubAllEnvs();

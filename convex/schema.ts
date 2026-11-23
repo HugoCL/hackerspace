@@ -23,4 +23,50 @@ const hackathons = defineTable({
   .index("by_slug", ["slug"])
   .index("by_ends_on", ["endsOn"]);
 
-export default defineSchema({ hackathons });
+export const teamDetails = v.object({
+  name: v.string(),
+  description: v.string(),
+  rolesWanted: v.array(v.string()),
+  recruitingStatus: v.union(v.literal("recruiting"), v.literal("closed")),
+});
+export const joinRequestStatus = v.union(
+  v.literal("pending"),
+  v.literal("accepted"),
+  v.literal("rejected"),
+);
+
+export default defineSchema({
+  hackathons,
+  users: defineTable({
+    identityKey: v.string(),
+    displayName: v.string(),
+  }).index("by_identityKey", ["identityKey"]),
+  teams: defineTable({
+    hackathonId: v.id("hackathons"),
+    ownerId: v.id("users"),
+    ...teamDetails.fields,
+  })
+    .index("by_hackathonId_and_recruitingStatus", [
+      "hackathonId",
+      "recruitingStatus",
+    ])
+    .index("by_hackathonId", ["hackathonId"])
+    .index("by_ownerId", ["ownerId"]),
+  teamMembers: defineTable({
+    teamId: v.id("teams"),
+    userId: v.id("users"),
+    joinedAt: v.number(),
+  })
+    .index("by_teamId_and_userId", ["teamId", "userId"])
+    .index("by_userId", ["userId"]),
+  teamJoinRequests: defineTable({
+    teamId: v.id("teams"),
+    requesterId: v.id("users"),
+    status: joinRequestStatus,
+    decidedAt: v.optional(v.number()),
+    decidedBy: v.optional(v.id("users")),
+  })
+    .index("by_teamId_and_status", ["teamId", "status"])
+    .index("by_teamId_and_requesterId", ["teamId", "requesterId"])
+    .index("by_requesterId", ["requesterId"]),
+});

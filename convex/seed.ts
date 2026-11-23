@@ -12,14 +12,56 @@ import { sampleHackathons } from "./sampleHackathons";
 // that are empty, so it is safe to run again. `pnpm seed` runs it by hand, `pnpm seed:reset`
 // wipes and reseeds a local deployment (it refuses to run anywhere else). Both talk to the running
 // deployment, so start `pnpm dev` first.
-type Seeder = (ctx: MutationCtx) => Promise<void>;
+type Seeder = (ctx: MutationCtx) => Promise<boolean>;
 
 export const seeders: Record<TableNames, Seeder> = {
   hackathons: async (ctx) => {
     for (const hackathon of sampleHackathons) {
       await ctx.db.insert("hackathons", { ...hackathon, isSample: true });
     }
+    return true;
   },
+  users: async () => false,
+  teams: async (ctx) => {
+    const hackathon = await ctx.db
+      .query("hackathons")
+      .withIndex("by_slug", (q) => q.eq("slug", "codigo-sin-fronteras"))
+      .unique();
+    if (!hackathon?.isSample) return false;
+    for (const [name, description, rolesWanted] of [
+      [
+        "Punto de Encuentro",
+        "Un mapa de comunidades de código abierto.",
+        ["Frontend", "Diseño"],
+      ],
+      [
+        "Ruta Abierta",
+        "Una guía de contribuciones para principiantes.",
+        ["Datos", "Backend"],
+      ],
+    ] as const) {
+      const ownerId = await ctx.db.insert("users", {
+        identityKey: `sample:${name}`,
+        displayName: "Equipo de ejemplo",
+      });
+      const teamId = await ctx.db.insert("teams", {
+        hackathonId: hackathon._id,
+        ownerId,
+        name,
+        description,
+        rolesWanted: [...rolesWanted],
+        recruitingStatus: "recruiting",
+      });
+      await ctx.db.insert("teamMembers", {
+        teamId,
+        userId: ownerId,
+        joinedAt: Date.now(),
+      });
+    }
+    return true;
+  },
+  teamMembers: async () => false,
+  teamJoinRequests: async () => false,
 };
 
 const tables = Object.entries<Seeder>(seeders) as [TableNames, Seeder][];
@@ -35,8 +77,7 @@ export const ensure = internalMutation({
     }
     for (const [table, seed] of tables) {
       if ((await ctx.db.query(table).first()) === null) {
-        await seed(ctx);
-        seeded.push(table);
+        if (await seed(ctx)) seeded.push(table);
       }
     }
     console.log(

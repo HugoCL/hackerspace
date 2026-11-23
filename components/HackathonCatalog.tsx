@@ -21,6 +21,7 @@ function searchText(value: string) {
 }
 
 function CatalogCard({ event }: { event: Doc<"hackathons"> }) {
+  const count = useQuery(api.presence.count, { hackathonId: event._id });
   return (
     <Link
       className="hs-card hs-card--interactive hs-hcard"
@@ -43,6 +44,17 @@ function CatalogCard({ event }: { event: Doc<"hackathons"> }) {
             </span>
           ))}
         </div>
+        {count !== undefined && (
+          <span
+            className={`hs-badge hs-badge--${count > 0 ? "live" : "neutral"}`}
+          >
+            {count === 1
+              ? "1 persona viendo"
+              : count > 1000
+                ? "Más de 1000 personas viendo"
+                : `${count} personas viendo`}
+          </span>
+        )}
       </div>
     </Link>
   );

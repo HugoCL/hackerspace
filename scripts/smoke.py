@@ -93,11 +93,28 @@ def check():
             page.on("pageerror", lambda err: page_errors.append(str(err)))
             try:
                 page.goto(URL, wait_until="domcontentloaded", timeout=120_000)
-                heading = page.get_by_role("heading", name="Hackerspace", level=1, exact=True)
+                heading = page.get_by_role(
+                    "heading", name="Hackathones cerca de ti", level=1, exact=True
+                )
                 heading.wait_for(state="visible", timeout=60_000)
                 expect(page.get_by_test_id("connection-status")).to_have_text(
                     "Conexión activa", timeout=60_000
                 )
+                expect(page.get_by_role("heading", name="Santiago Hacks 2027")).to_be_visible()
+                page.get_by_role("tab", name="Virtuales").click()
+                expect(page.get_by_role("heading", name="Santiago Hacks 2027")).not_to_be_visible()
+                search = page.get_by_role("searchbox", name="Buscar hackathones")
+                search.fill("codigo")
+                expect(page.get_by_role("heading", name="Código sin Fronteras")).to_be_visible()
+                search.fill("evento inexistente")
+                expect(page.get_by_role("heading", name="No encontramos hackathones")).to_be_visible()
+                page.get_by_role("button", name="Limpiar búsqueda").click()
+                page.get_by_role("link", name="Código sin Fronteras", exact=False).click()
+                expect(
+                    page.get_by_role("heading", name="Código sin Fronteras", level=1)
+                ).to_be_visible()
+                page.get_by_role("link", name="Ver bases", exact=True).click()
+                expect(page).to_have_url(f"{URL}/hackathones/codigo-sin-fronteras#bases")
             finally:
                 # Always keep the screenshot, and never let a failure here hide the real error.
                 try:
@@ -110,7 +127,7 @@ def check():
         print("FAIL: uncaught page errors", *page_errors, sep="\n  ")
         return 1
     print(
-        f"PASS: {URL} rendered Hackerspace and connected to Convex, "
+        f"PASS: {URL} connected to Convex, filtered events and opened a hackathon profile, "
         "screenshot at artifacts/smoke.png"
     )
     return 0

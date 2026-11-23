@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "../design-system/components/bundle.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { connection } from "next/server";
 import ConvexClientProvider from "@/components/ConvexClientProvider";

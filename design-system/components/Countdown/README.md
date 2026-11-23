@@ -1,7 +1,7 @@
 # Countdown
 
-Cuenta regresiva en mono tabular que se actualiza cada segundo: para el inicio de una hackathon, el cierre de inscripciones o la entrega.
+Cuenta regresiva con el reloj en monoespaciada tabular que se actualiza cada segundo: para el inicio de una hackathon, el cierre de inscripciones o la entrega.
 
-- `to`: fecha (Date, timestamp o ISO). `label` corto en mayúsculas ("COMIENZA EN", "ENTREGA EN").
-- Al llegar a cero muestra `doneLabel` ("YA COMENZÓ") en `hs-live-ink`.
+- `to`: fecha (Date, timestamp o ISO). `label` corto ("Comienza en", "Entrega en").
+- Al llegar a cero muestra `doneLabel` ("Ya comenzó") en `hs-live-ink`.
 - Uno por vista. Más de un reloj compite por la atención.

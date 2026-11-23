@@ -22,7 +22,7 @@ function searchText(value: string) {
 }
 
 function CatalogCard({ event }: { event: Doc<"hackathons"> }) {
-  const count = useQuery(api.presence.count, { hackathonId: event._id });
+  const attendance = useQuery(api.presence.count, { hackathonId: event._id });
   return (
     <Link
       className="hs-card hs-card--interactive hs-hcard"
@@ -45,7 +45,10 @@ function CatalogCard({ event }: { event: Doc<"hackathons"> }) {
             </span>
           ))}
         </div>
-        <PresenceIndicator count={count} />
+        <PresenceIndicator
+          count={attendance?.count}
+          visitors={attendance?.visitors}
+        />
       </div>
     </Link>
   );

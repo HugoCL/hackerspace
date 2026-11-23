@@ -107,7 +107,7 @@ function useHackathonPresence(hackathonId: Id<"hackathons">) {
     !isLoading &&
       room?.hackathonId === hackathonId &&
       room.isAuthenticated === isAuthenticated
-      ? { roomToken: room.roomToken }
+      ? { hackathonId, roomToken: room.roomToken }
       : "skip",
   );
 }
@@ -159,14 +159,19 @@ export default function HackathonPresence({
     isAuthenticated && attendance && "viewers" in attendance
       ? (attendance.viewers ?? [])
       : [];
-  const hiddenViewers = (attendance?.count ?? 0) - viewers.length;
+  const count = attendance?.count ?? 0;
+  const hiddenViewers = count - viewers.length;
 
   return (
     <section
       aria-label="Presencia en vivo"
       className="flex flex-wrap items-center gap-x-3 gap-y-1"
     >
-      <PresenceIndicator announce count={attendance?.count} />
+      <PresenceIndicator
+        announce
+        count={attendance?.count}
+        visitors={attendance?.visitors}
+      />
       {viewers.length > 0 && (
         <Popover>
           <PopoverTrigger
@@ -190,7 +195,11 @@ export default function HackathonPresence({
                 <li key={`${index}:${name}:${image ?? ""}`}>{name}</li>
               ))}
               {hiddenViewers > 0 && (
-                <li className="text-muted-foreground">y {hiddenViewers} más</li>
+                <li className="text-muted-foreground">
+                  {count > 1000
+                    ? "y muchas personas más"
+                    : `y ${hiddenViewers} más`}
+                </li>
               )}
             </ul>
           </PopoverContent>

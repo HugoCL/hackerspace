@@ -1,6 +1,6 @@
 # ActivityFeed
 
-Lo que está pasando ahora: hora en mono, quién (Avatar o AgentTag) y qué hizo. Las filas nuevas entran arriba con un destello `hs-live-soft`.
+Lo que está pasando ahora: hora, quién (Avatar o AgentTag) y qué hizo. Las filas nuevas bajan 6px con fundido y un destello `hs-live-soft`.
 
 - Para el aside del AppShell y la pestaña Resumen de una hackathon. 5 a 10 filas; el resto en "Ver todo".
 - `isNew` en las filas recién llegadas (el destello dura 2.4s y respeta reduced-motion).

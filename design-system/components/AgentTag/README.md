@@ -1,6 +1,6 @@
 # AgentTag
 
-Marca todo lo que hizo un agente IA: el scout que encontró y creó un perfil de hackathon, o el agente de un usuario que actúa vía la API. Mono, borde punteado, ícono `bot`, color `hs-agent`.
+Marca todo lo que hizo un agente IA: el scout que encontró y creó un perfil de hackathon, o el agente de un usuario que actúa vía la API. Monoespaciada en minúsculas ("agente scout"), borde punteado, ícono `bot`, color `hs-agent`.
 
 ## Reglas
 - **Obligatorio** junto a cualquier contenido o acción automatizada: perfiles creados por el scout, mensajes o postulaciones enviadas por un agente, filas del feed.

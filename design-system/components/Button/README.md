@@ -8,5 +8,6 @@ Acciones. Variantes: `primary` (tinta), `signal` (lima), `secondary` (por defect
 - `ghost` para acciones terciarias y de navegación ("Ver todos →").
 - `danger` solo para salir de un equipo o eliminar; siempre con confirmación.
 - Verbo primero, en tuteo: "Unirme al equipo", "Crear perfil". Nada de "Aceptar".
+- Se encoge apenas al presionar y su área táctil llega a 40px aunque mida 32px.
 - Solo ícono: pasa `aria-label` y ningún texto; se vuelve cuadrado.
 - Con `href` se renderiza como enlace con el mismo aspecto.

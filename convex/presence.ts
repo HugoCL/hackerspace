@@ -1,7 +1,8 @@
 import { Presence } from "@convex-dev/presence";
 import { v } from "convex/values";
 import { components } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { mutation, type QueryCtx, query } from "./_generated/server";
 
 const presence = new Presence(components.presence);
 const heartbeatMs = 5000;
@@ -11,6 +12,31 @@ const viewerDetails = v.object({
   name: v.string(),
   image: v.optional(v.string()),
 });
+const totals = { count: v.number(), visitors: v.number() };
+
+function roomFor(hackathonId: Id<"hackathons">, signedIn: boolean) {
+  return `hackathon:${hackathonId}:${signedIn ? "accounts" : "visitors"}`;
+}
+
+async function onlineVisitors(ctx: QueryCtx, hackathonId: Id<"hackathons">) {
+  return (
+    await presence.listRoom(
+      ctx,
+      roomFor(hackathonId, false),
+      true,
+      countLimit + 1,
+    )
+  ).length;
+}
+
+async function onlineAccounts(ctx: QueryCtx, hackathonId: Id<"hackathons">) {
+  return presence.listRoom(
+    ctx,
+    roomFor(hackathonId, true),
+    true,
+    countLimit + 1,
+  );
+}
 
 export const heartbeat = mutation({
   args: {
@@ -28,7 +54,7 @@ export const heartbeat = mutation({
     }
 
     const identity = await ctx.auth.getUserIdentity();
-    const roomId = `hackathon:${hackathonId}`;
+    const roomId = roomFor(hackathonId, Boolean(identity));
     if (!identity && (!visitorId || !uuid.test(visitorId))) {
       throw new Error("Invalid anonymous visitor");
     }
@@ -54,21 +80,33 @@ export const heartbeat = mutation({
 });
 
 export const list = query({
-  args: { roomToken: v.string() },
+  args: { hackathonId: v.id("hackathons"), roomToken: v.string() },
   returns: v.union(
-    v.object({ count: v.number() }),
-    v.object({ count: v.number(), viewers: v.array(viewerDetails) }),
+    v.object(totals),
+    v.object({ ...totals, viewers: v.array(viewerDetails) }),
   ),
-  handler: async (ctx, { roomToken }) => {
-    const online = (await presence.list(ctx, roomToken, countLimit + 1)).filter(
-      ({ online }) => online,
-    );
-    const count = online.length;
-    if (!(await ctx.auth.getUserIdentity())) return { count };
+  handler: async (ctx, { hackathonId, roomToken }) => {
+    const [accounts, visitors, identity] = await Promise.all([
+      onlineAccounts(ctx, hackathonId),
+      onlineVisitors(ctx, hackathonId),
+      ctx.auth.getUserIdentity(),
+    ]);
+    const count = accounts.length;
+    if (!identity) return { count, visitors };
 
+    const accountIds = new Set(accounts.map(({ userId }) => userId));
     const viewers = [];
-    for (const { userId, data } of online) {
-      if (!userId.startsWith("account:") || !data || typeof data !== "object")
+    for (const { userId, online, data } of await presence.list(
+      ctx,
+      roomToken,
+      8,
+    )) {
+      if (
+        !online ||
+        !accountIds.has(userId) ||
+        !data ||
+        typeof data !== "object"
+      )
         continue;
       if (!("name" in data) || typeof data.name !== "string") continue;
       const image =
@@ -76,9 +114,8 @@ export const list = query({
           ? data.image
           : undefined;
       viewers.push({ name: data.name, ...(image ? { image } : {}) });
-      if (viewers.length === 8) break;
     }
-    return { count, viewers };
+    return { count, visitors, viewers };
   },
 });
 
@@ -90,14 +127,12 @@ export const disconnect = mutation({
 
 export const count = query({
   args: { hackathonId: v.id("hackathons") },
-  returns: v.number(),
-  handler: async (ctx, { hackathonId }) =>
-    (
-      await presence.listRoom(
-        ctx,
-        `hackathon:${hackathonId}`,
-        true,
-        countLimit + 1,
-      )
-    ).length,
+  returns: v.object(totals),
+  handler: async (ctx, { hackathonId }) => {
+    const [accounts, visitors] = await Promise.all([
+      onlineAccounts(ctx, hackathonId),
+      onlineVisitors(ctx, hackathonId),
+    ]);
+    return { count: accounts.length, visitors };
+  },
 });

@@ -4,13 +4,29 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from "@ui-sdk/react/tabs";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import type { ReactNode } from "react";
+import { type ReactNode, useSyncExternalStore } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import HackathonTeams from "./HackathonTeams";
 import { AppShell } from "./hackathon-ui";
 
 type ProfileTab = "resumen" | "bases" | "equipos";
+
+function subscribeToHash(onChange: () => void) {
+  window.addEventListener("hashchange", onChange);
+  return () => window.removeEventListener("hashchange", onChange);
+}
+
+function tabFromHash(): ProfileTab {
+  switch (window.location.hash) {
+    case "#bases":
+      return "bases";
+    case "#sample-teams":
+      return "equipos";
+    default:
+      return "resumen";
+  }
+}
 
 function formatCount(count: number) {
   return count > 1000 ? "1000+" : String(count);
@@ -32,10 +48,17 @@ export default function HackathonProfileTabs({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab");
+  const legacyTab = useSyncExternalStore(
+    subscribeToHash,
+    tabFromHash,
+    (): ProfileTab => "resumen",
+  );
   const tab =
     requestedTab === "bases" || requestedTab === "equipos"
       ? requestedTab
-      : "resumen";
+      : requestedTab === null
+        ? legacyTab
+        : "resumen";
   const summary = useQuery(api.teams.summary, { hackathonId });
 
   function changeTab(next: ProfileTab | null) {
@@ -44,11 +67,13 @@ export default function HackathonProfileTabs({
     if (next === "resumen") params.delete("tab");
     else params.set("tab", next);
     const query = params.toString();
+    const hash = window.location.hash;
     window.history.pushState(
       null,
       "",
       query ? `${pathname}?${query}` : pathname,
     );
+    if (hash) window.dispatchEvent(new HashChangeEvent("hashchange"));
   }
 
   return (

@@ -274,6 +274,16 @@ def check():
                         extra_context.close()
                 assert not navigations, f"Presence updated after navigation: {navigations}"
                 presence.screenshot(path=str(ARTIFACTS / "presence-after-close.png"))
+                profile_url = f"{URL}/hackathons/codigo-sin-fronteras"
+                page.goto(f"{profile_url}#bases")
+                expect(page.get_by_role("tabpanel", name="Bases y reglas")).to_be_visible()
+                page.get_by_role("tab", name="Resumen").click()
+                expect(page).to_have_url(profile_url)
+                expect(page.get_by_role("tabpanel", name="Resumen")).to_be_visible()
+                page.goto(f"{profile_url}#sample-teams")
+                expect(page.get_by_role("tabpanel", name="Equipos", exact=False)).to_be_visible()
+                page.goto(f"{profile_url}?tab=resumen#bases")
+                expect(page.get_by_role("tabpanel", name="Resumen")).to_be_visible()
             finally:
                 # Always keep the screenshot, and never let a failure here hide the real error.
                 try:

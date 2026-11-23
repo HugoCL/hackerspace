@@ -112,7 +112,9 @@ def check():
                 search.fill("evento inexistente")
                 expect(page.get_by_role("heading", name="No encontramos hackathones")).to_be_visible()
                 page.get_by_role("button", name="Limpiar búsqueda").click()
-                page.get_by_role("link", name="Código sin Fronteras", exact=False).click()
+                event_card = page.get_by_role("link", name="Código sin Fronteras", exact=False)
+                expect(event_card.locator("[data-filled]")).to_have_count(8)
+                event_card.click()
                 expect(
                     page.get_by_role("heading", name="Código sin Fronteras", level=1)
                 ).to_be_visible()
@@ -120,10 +122,12 @@ def check():
                 expect(sidebar.get_by_role("region", name="Datos del evento")).to_contain_text(
                     "En línea"
                 )
-                presence = sidebar.get_by_role("region", name="Viendo ahora")
+                presence = page.get_by_role("region", name="Presencia en vivo")
                 count = presence.locator("[aria-live=polite]")
-                expect(count).to_have_text("1 persona")
-                expect(presence.get_by_role("list")).to_have_count(0)
+                cells = presence.locator("[data-filled=true]")
+                expect(count).to_have_text("1 mirando")
+                expect(cells).to_have_count(1)
+                expect(presence.get_by_role("button", name="Ver quién está mirando")).to_have_count(0)
                 expect(
                     sidebar.get_by_role("region", name="Equipos buscando gente").get_by_role(
                         "listitem"
@@ -136,19 +140,33 @@ def check():
                     "framenavigated",
                     lambda frame: navigations.append(frame.url) if frame == page.main_frame else None,
                 )
-                other_context = browser.new_context(viewport={"width": 390, "height": 844})
+                other_context = browser.new_context(
+                    viewport={"width": 390, "height": 844}, reduced_motion="reduce"
+                )
                 try:
                     other_page = other_context.new_page()
                     other_page.on("pageerror", lambda err: page_errors.append(str(err)))
                     other_page.goto(page.url, wait_until="domcontentloaded")
-                    expect(count).to_have_text("2 personas")
+                    expect(count).to_have_text("2 mirando")
+                    expect(cells).to_have_count(2)
                     presence.screenshot(path=str(ARTIFACTS / "presence-two-viewers.png"))
-                    other_presence = other_page.get_by_role("region", name="Viendo ahora")
-                    expect(other_presence.locator("[aria-live=polite]")).to_have_text("2 personas")
+                    other_presence = other_page.get_by_role("region", name="Presencia en vivo")
+                    expect(other_presence.locator("[aria-live=polite]")).to_have_text("2 mirando")
+                    expect(other_presence.locator("[data-filled=true]").first).to_have_css(
+                        "transition-property", "none"
+                    )
                     other_presence.screenshot(path=str(ARTIFACTS / "presence-mobile.png"))
+                    clean_capture = "#clerk-components, nextjs-portal { visibility: hidden; }"
+                    page.screenshot(
+                        path=str(ARTIFACTS / "profile-desktop.png"), full_page=True, style=clean_capture
+                    )
+                    other_page.screenshot(
+                        path=str(ARTIFACTS / "profile-mobile.png"), full_page=True, style=clean_capture
+                    )
                 finally:
                     other_context.close()
-                expect(count).to_have_text("1 persona", timeout=20_000)
+                expect(count).to_have_text("1 mirando", timeout=20_000)
+                expect(cells).to_have_count(1)
                 assert not navigations, f"Presence updated after navigation: {navigations}"
                 presence.screenshot(path=str(ARTIFACTS / "presence-after-close.png"))
             finally:

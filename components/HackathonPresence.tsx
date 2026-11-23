@@ -1,10 +1,17 @@
 "use client";
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@ui-sdk/react/popover";
 import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import PresenceIndicator from "./PresenceIndicator";
 
 let ephemeralVisitorId: string | undefined;
 
@@ -107,28 +114,32 @@ function useHackathonPresence(hackathonId: Id<"hackathons">) {
 
 function ViewerAvatar({ name, image }: { name: string; image?: string }) {
   const [failedImage, setFailedImage] = useState<string>();
-  const initials = name
-    .trim()
-    .split(/\s+/u)
+  const initials = Array.from(
+    name
+      .trim()
+      .split(/\s+/u)
+      .slice(0, 2)
+      .map((part) => Array.from(part)[0])
+      .join("")
+      .toLocaleUpperCase("es"),
+  )
     .slice(0, 2)
-    .map((part) => Array.from(part)[0])
-    .join("")
-    .toLocaleUpperCase("es");
+    .join("");
 
   return (
     <span
       aria-hidden="true"
-      className="hs-avatar hs-avatar--sm hs-avatar--t0 leading-none"
+      className="hs-avatar hs-avatar--xs hs-avatar--t0 leading-none"
     >
       {image && failedImage !== image ? (
         <Image
           alt=""
-          height={28}
+          height={20}
           onError={() => setFailedImage(image)}
           referrerPolicy="no-referrer"
           src={image}
           unoptimized
-          width={28}
+          width={20}
         />
       ) : (
         initials
@@ -143,42 +154,43 @@ export default function HackathonPresence({
   hackathonId: Id<"hackathons">;
 }) {
   const attendance = useHackathonPresence(hackathonId);
+  const { isAuthenticated } = useConvexAuth();
   const viewers =
-    attendance && "viewers" in attendance ? (attendance.viewers ?? []) : [];
-  const count = attendance?.count;
-  const countLabel =
-    count === undefined
-      ? "Conectando…"
-      : count === 1
-        ? "1 persona"
-        : count > 1000
-          ? "Más de 1000 personas"
-          : `${count} personas`;
+    isAuthenticated && attendance && "viewers" in attendance
+      ? (attendance.viewers ?? [])
+      : [];
 
   return (
-    <section aria-labelledby="live-presence" className="hs-card">
-      <div className="hs-section-head">
-        <h2 className="hs-section-title" id="live-presence">
-          Viendo ahora
-        </h2>
-        <span className="hs-badge hs-badge--live">En vivo</span>
-      </div>
-      <p aria-live="polite" className="hs-avstack-more">
-        {countLabel}
-      </p>
+    <section
+      aria-label="Presencia en vivo"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1"
+    >
+      <PresenceIndicator announce count={attendance?.count} />
       {viewers.length > 0 && (
-        <ul className="mt-2 flex flex-col gap-2">
-          {viewers.map(({ name, image }, index) => (
-            <li
-              className="flex min-w-0 items-center gap-2 text-sm"
-              // biome-ignore lint/suspicious/noArrayIndexKey: Public profiles can share names and photos; the server returns no account IDs.
-              key={`${index}:${name}:${image ?? ""}`}
-            >
-              <ViewerAvatar name={name} image={image} />
-              <span className="break-all">{name}</span>
-            </li>
-          ))}
-        </ul>
+        <Popover>
+          <PopoverTrigger
+            aria-label="Ver quién está mirando"
+            className="inline-flex items-center gap-0.5 rounded-full"
+          >
+            {viewers.map(({ name, image }, index) => (
+              <ViewerAvatar
+                // biome-ignore lint/suspicious/noArrayIndexKey: Profile names and pictures are not unique.
+                key={`${index}:${name}:${image ?? ""}`}
+                name={name}
+                image={image}
+              />
+            ))}
+          </PopoverTrigger>
+          <PopoverContent className="hs-card z-10">
+            <PopoverTitle>Personas mirando</PopoverTitle>
+            <ul className="mt-2 grid gap-1 text-sm">
+              {viewers.map(({ name, image }, index) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: Profile names and pictures are not unique.
+                <li key={`${index}:${name}:${image ?? ""}`}>{name}</li>
+              ))}
+            </ul>
+          </PopoverContent>
+        </Popover>
       )}
     </section>
   );

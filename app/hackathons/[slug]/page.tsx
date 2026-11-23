@@ -51,7 +51,6 @@ function ProfileSidebar({ event }: { event: Doc<"hackathons"> }) {
           Ver bases
         </Button>
       </section>
-      <HackathonPresence hackathonId={event._id} />
       <section aria-labelledby="sample-teams" className="hs-card">
         <h2 className="hs-section-title" id="sample-teams">
           Equipos buscando gente
@@ -105,12 +104,11 @@ export default async function HackathonProfile({
               </span>
             )}
           </div>
-          <div className="min-[901px]:hidden">
-            <div className="hs-pagehead-meta">
-              <EventMeta event={event} />
-              <ModalityBadge modality={event.modality} />
-            </div>
+          <div className="hs-pagehead-meta">
+            <EventMeta event={event} />
+            <ModalityBadge modality={event.modality} />
           </div>
+          <HackathonPresence hackathonId={event._id} />
         </div>
       </header>
       <section aria-labelledby="overview" className="hs-section">

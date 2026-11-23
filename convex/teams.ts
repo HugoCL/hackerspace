@@ -1,5 +1,8 @@
 import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
-import { paginationOptsValidator, paginationResultValidator } from "convex/server";
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { ConvexError, type Infer, v } from "convex/values";
 import { components } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";

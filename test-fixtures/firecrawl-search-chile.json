@@ -36,7 +36,7 @@
           "creditsUsed": 5
         },
         "json": {
-          "isHackathon": true,
+          "isBuildEvent": true,
           "title": "2026 NASA Space Apps Challenge",
           "startDate": "2026-11-14",
           "city": "Santiago",

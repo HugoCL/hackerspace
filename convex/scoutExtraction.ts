@@ -31,7 +31,7 @@ const optional = <T extends z.ZodType>(schema: T) =>
     .transform((value) => value ?? undefined);
 
 const extraction = z.object({
-  isHackathon: z.literal(true),
+  isBuildEvent: z.literal(true),
   title: text(200),
   officialUrl: optional(httpUrl),
   organizer: optional(text(200)),
@@ -61,13 +61,13 @@ const searchResponse = z.object({
 
 // The extraction request sent to Firecrawl. `evidence` and the field names must match `extraction`.
 export const extractionPrompt =
-  "Set isHackathon to true only if the page is about one specific hackathon event, not a list of events, a news roundup or a video. Extract its details. Use only what the page states; omit any field the page does not state, never guess and never write placeholders such as N/A. Dates are YYYY-MM-DD. For startDate, endDate, city and organizer, also put a short quote copied verbatim from the page into evidence under the same key. Put the participation guidelines and the rules, copied verbatim from the page, into evidence.guidelines and evidence.rules.";
+  "Set isBuildEvent to true only if the page is about one specific dated event where people or teams build a prototype, product, game, model or solution within a fixed time frame or challenge period (hackathon, datathon, ideathon, game jam, buildathon, innovation or coding challenge). It is false for a list of events, a news roundup, a video, a talk, a course, a fair, or a grant or funding call. Extract its details. Use only what the page states; omit any field the page does not state, never guess and never write placeholders such as N/A. Dates are YYYY-MM-DD. For startDate, endDate, city and organizer, also put a short quote copied verbatim from the page into evidence under the same key. Put the participation guidelines and the rules, copied verbatim from the page, into evidence.guidelines and evidence.rules.";
 
 const string = { type: "string" } as const;
 export const extractionSchema = {
   type: "object",
   properties: {
-    isHackathon: { type: "boolean" },
+    isBuildEvent: { type: "boolean" },
     title: string,
     officialUrl: string,
     organizer: string,
@@ -90,7 +90,7 @@ export const extractionSchema = {
       },
     },
   },
-  required: ["isHackathon"],
+  required: ["isBuildEvent"],
 };
 
 export function normalizeUrl(raw: string): string | undefined {
@@ -120,10 +120,17 @@ export function todayInChile(now: number) {
   }).format(now);
 }
 
-const isChile = (country: string | undefined) =>
+const isChile = (country: string) =>
   ["chile", "cl", "república de chile", "republica de chile"].includes(
-    fold(country ?? ""),
+    fold(country),
   );
+
+const isChileHost = (url: string) => new URL(url).hostname.endsWith(".cl");
+
+// Pages often never say "Chile". A page that names no country counts as Chilean when it is on a
+// .cl host; one that names another country never does.
+const inChile = (country: string | undefined, ...urls: string[]) =>
+  country === undefined ? urls.some(isChileHost) : isChile(country);
 
 // The extractor must back a field with a quote that really appears on the page.
 function quoteFinder(quotes: Record<string, string>, markdown: string) {
@@ -144,10 +151,12 @@ export function observationFromResult(
   const result = searchResult.safeParse(raw);
   if (!result.success || !result.data.json) return null;
   const found = extraction.safeParse(result.data.json);
-  if (!found.success || !isChile(found.data.country)) return null;
+  if (!found.success) return null;
   const { url: searchUrl, markdown, metadata } = result.data;
   const sourceUrl = metadata?.url ?? searchUrl;
   const data = found.data;
+  if (!inChile(data.country, data.officialUrl ?? sourceUrl, sourceUrl))
+    return null;
 
   const quoteFor = quoteFinder(data.evidence ?? {}, markdown ?? "");
   const proposal: ScoutProposal = {

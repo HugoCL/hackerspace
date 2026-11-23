@@ -298,7 +298,7 @@ it("never writes to the published catalog", async () => {
 it.each([
   ["another country", { country: "Argentina" }],
   ["no country", { country: null }],
-  ["a non-hackathon page", { isHackathon: false }],
+  ["a page that is not a build event", { isBuildEvent: false }],
   ["a page with no title", { title: "" }],
   [
     "an event that already ended",
@@ -311,6 +311,47 @@ it.each([
 ])("drops results with %s", async (_name, patch) => {
   const { search, candidates } = setup();
   stubFirecrawl(searchBody(withJson(patch)));
+
+  await search();
+
+  expect(await candidates()).toEqual([]);
+});
+
+it.each([
+  [
+    "the official URL",
+    withJson({ country: null, officialUrl: "https://datatonsalud.cl/" }),
+  ],
+  [
+    "the page Firecrawl scraped",
+    {
+      ...withJson({ country: null, officialUrl: undefined }),
+      url: "https://saludpublica.uchile.cl/datatón",
+      metadata: {
+        ...event.metadata,
+        url: "https://saludpublica.uchile.cl/datatón",
+      },
+    },
+  ],
+])(
+  "keeps a result with no country when %s is on a .cl host",
+  async (_name, result) => {
+    const { search, candidates } = setup();
+    stubFirecrawl(searchBody(result));
+
+    await search();
+
+    expect(await candidates()).toHaveLength(1);
+  },
+);
+
+it("drops a result from another country even on a .cl host", async () => {
+  const { search, candidates } = setup();
+  stubFirecrawl(
+    searchBody(
+      withJson({ country: "Argentina", officialUrl: "https://hackaton.cl/" }),
+    ),
+  );
 
   await search();
 

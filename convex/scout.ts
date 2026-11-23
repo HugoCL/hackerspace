@@ -18,10 +18,13 @@ import {
 
 // The Scout only covers Chile for now. The query asks Firecrawl for Chilean results and
 // scoutExtraction rejects anything whose page says another country.
-// Search results skew to past editions; naming the year brings up the upcoming ones.
+// Search results skew to past editions; naming the year brings up the upcoming ones. Of the other
+// event names tried live (game jam, ideatón, desafío de innovación), only datatón found a new
+// upcoming event, so it is the one extra query.
 const chileQueries = (year: number) => [
   `hackatón Chile ${year}`,
   `hackathon Chile ${year + 1}`,
+  `datatón Chile ${year}`,
 ];
 const CHILE_SEARCH = {
   country: "CL",

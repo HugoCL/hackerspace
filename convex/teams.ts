@@ -1,5 +1,5 @@
 import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
-import { paginationOptsValidator } from "convex/server";
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { ConvexError, type Infer, v } from "convex/values";
 import { components } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -107,6 +107,9 @@ export const list = query({
     search: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
+  returns: paginationResultValidator(
+    teamDetails.extend({ _id: v.id("teams"), memberCount: v.number() }),
+  ),
   handler: async (
     ctx,
     { hackathonId, recruitingOnly, search, paginationOpts },

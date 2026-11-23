@@ -211,8 +211,15 @@ it("only refreshes lastSeenAt on a candidate a reviewer already decided", async 
   stubFirecrawl(searchBody(event));
   await search();
   const [pending] = await candidates();
-  await t.run((ctx) =>
-    ctx.db.patch("scoutCandidates", pending._id, { reviewStatus: "approved" }),
+  await t.run(async (ctx) =>
+    ctx.db.patch("scoutCandidates", pending._id, {
+      reviewStatus: "rejected",
+      reviewedBy: await ctx.db.insert("users", {
+        identityKey: "reviewer",
+        displayName: "Revisora",
+      }),
+      reviewedAt: Date.now(),
+    }),
   );
 
   vi.setSystemTime(new Date("2026-11-02T15:00:00Z"));
@@ -223,7 +230,7 @@ it("only refreshes lastSeenAt on a candidate a reviewer already decided", async 
 
   expect(result).toMatchObject({ inserted: 0, updated: 0, seen: 1 });
   const [decided] = await candidates();
-  expect(decided.reviewStatus).toBe("approved");
+  expect(decided.reviewStatus).toBe("rejected");
   expect(decided.proposal).toEqual(pending.proposal);
   expect(decided.provenance).toEqual(pending.provenance);
   expect(decided.lastSeenAt).toBeGreaterThan(pending.lastSeenAt);

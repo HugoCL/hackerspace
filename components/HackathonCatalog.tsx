@@ -46,6 +46,7 @@ function CatalogCard({ event }: { event: Doc<"hackathons"> }) {
           ))}
         </div>
         <PresenceIndicator
+          compact
           count={attendance?.count}
           visitors={attendance?.visitors}
         />

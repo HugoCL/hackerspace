@@ -13,6 +13,9 @@ libraries, Linux only: .capy/setup.json uses it). Set PORT to change the port. I
 already in use it stops, because that server may come from another checkout. Set SMOKE_REUSE=1 to
 test the server already running there instead.
 
+On a Clerk-enabled Convex dev preview, set SMOKE_CLERK_OWNER and SMOKE_CLERK_APPLICANT
+to two +clerk_test email addresses to exercise the authenticated chat; this creates a test team.
+
 Stopping the server: scripts/dev.mjs runs in its own session and gets one SIGINT, which convex turns
 into a clean stop of `next dev` and the local backend (see scripts/dev.mjs). SIGINT, SIGTERM or
 SIGHUP sent to this script go through the same teardown, and further signals during it are
@@ -259,6 +262,14 @@ def check():
                     page.screenshot(path=str(ARTIFACTS / "smoke.png"), full_page=True)
                 except Exception as err:
                     print(f"smoke: could not save the screenshot: {err}")
+            owner = os.environ.get("SMOKE_CLERK_OWNER")
+            applicant = os.environ.get("SMOKE_CLERK_APPLICANT")
+            if owner or applicant:
+                if not owner or not applicant or any("+clerk_test@" not in email for email in (owner, applicant)):
+                    raise ValueError("Authenticated smoke requires two Clerk test emails")
+                from smoke_chat import check_chat
+
+                check_chat(browser, URL, owner, applicant)
         finally:
             browser.close()
     if page_errors:

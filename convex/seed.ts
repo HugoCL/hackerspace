@@ -67,6 +67,7 @@ export const seeders: Record<TableNames, Seeder> = {
   teamJoinRequests: async () => false,
   teamConversations: async () => false,
   teamMessages: async () => false,
+  scoutCandidates: async () => false,
 };
 
 const tables = Object.entries<Seeder>(seeders) as [TableNames, Seeder][];

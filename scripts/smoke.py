@@ -171,6 +171,17 @@ def check():
                 expect(teams.get_by_role("heading", name="Punto de Encuentro")).to_be_visible()
                 expect(teams.get_by_text("Qué buscan", exact=True)).to_be_visible()
                 expect(teams.get_by_text("1 integrante", exact=True)).to_be_visible()
+                description = teams.get_by_role("button", name="Descripción de Punto de Encuentro")
+                full_description = teams.locator("[data-slot=collapsible-panel]").get_by_text(
+                    "Un mapa de comunidades de código abierto.", exact=True
+                )
+                expect(description).to_have_attribute("aria-expanded", "false")
+                expect(full_description).to_be_hidden()
+                description.press("Enter")
+                expect(description).to_have_attribute("aria-expanded", "true")
+                expect(full_description).to_be_visible()
+                description.press("Space")
+                expect(full_description).to_be_hidden()
                 team_search.fill("Ruta Abierta")
                 expect(teams.get_by_role("listitem")).to_have_count(1)
                 expect(teams.get_by_role("heading", name="Ruta Abierta")).to_be_visible()

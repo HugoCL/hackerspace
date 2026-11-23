@@ -6,7 +6,11 @@ export function teamSearchText(name: string, lookingFor: string) {
 
 export function legacyLookingFor(roles?: string[]) {
   const joined = roles?.join(", ").trim() ?? "";
-  return joined.length <= lookingForLimit
-    ? joined
-    : `${joined.slice(0, lookingForLimit - 1).trimEnd()}…`;
+  if (joined.length <= lookingForLimit)
+    return { text: joined, truncated: false };
+  const excerpt = joined
+    .slice(0, lookingForLimit - 1)
+    .replace(/[\uD800-\uDBFF]$/u, "")
+    .trimEnd();
+  return { text: `${excerpt}…`, truncated: true };
 }

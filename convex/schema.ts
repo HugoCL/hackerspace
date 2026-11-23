@@ -44,8 +44,12 @@ export default defineSchema({
   teams: defineTable({
     hackathonId: v.id("hackathons"),
     ownerId: v.id("users"),
-    ...teamDetails.fields,
-    searchableText: v.string(),
+    ...teamDetails.omit("lookingFor").fields,
+    lookingFor: v.optional(v.string()),
+    searchableText: v.optional(v.string()),
+    rolesWanted: v.optional(v.array(v.string())),
+    searchableRoles: v.optional(v.string()),
+    archivedRoles: v.optional(v.array(v.string())),
   })
     .index("by_hackathonId_and_recruitingStatus", [
       "hackathonId",

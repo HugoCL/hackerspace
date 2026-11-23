@@ -4,6 +4,11 @@ import { SignInButton } from "@clerk/nextjs";
 import { Button } from "@ui-sdk/react/button";
 import { Checkbox, CheckboxIndicator } from "@ui-sdk/react/checkbox";
 import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@ui-sdk/react/collapsible";
+import {
   Dialog,
   DialogBackdrop,
   DialogClose,
@@ -764,12 +769,25 @@ export default function HackathonTeams({
               <div className="hs-tcard-head">
                 <h3 className="hs-tcard-title wrap-anywhere">{team.name}</h3>
               </div>
-              <p
-                className="hs-tcard-pitch line-clamp-1!"
-                title={team.description}
-              >
-                {team.description}
-              </p>
+              <Collapsible>
+                <CollapsibleTrigger
+                  aria-label={`Descripción de ${team.name}`}
+                  className="group flex w-full cursor-pointer items-center justify-between gap-2 text-left text-muted-foreground"
+                >
+                  <span className="hs-tcard-pitch line-clamp-1! group-data-open:hidden!">
+                    {team.description}
+                  </span>
+                  <span className="hidden text-sm group-data-open:inline">
+                    Descripción
+                  </span>
+                  <Icon name="chevron" />
+                </CollapsibleTrigger>
+                <CollapsiblePanel>
+                  <p className="hs-tcard-pitch line-clamp-none! wrap-anywhere pt-1!">
+                    {team.description}
+                  </p>
+                </CollapsiblePanel>
+              </Collapsible>
               {team.lookingFor && (
                 <div className="hs-tcard-looking block! rounded border border-border bg-muted px-2.5 py-2 text-sm wrap-anywhere">
                   <p className="hs-tcard-looking-label font-medium">

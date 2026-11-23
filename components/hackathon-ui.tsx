@@ -40,11 +40,13 @@ export function AppShell({
   children,
   aside,
   exploring = false,
+  footerVariant = "compact",
   year,
 }: {
   children: ReactNode;
   aside?: ReactNode;
   exploring?: boolean;
+  footerVariant?: "animated" | "compact";
   year: number;
 }) {
   return (
@@ -82,7 +84,7 @@ export function AppShell({
           <aside className="hs-shell-aside prototype-aside">{aside}</aside>
         )}
       </div>
-      <SiteFooter year={year} />
+      <SiteFooter variant={footerVariant} year={year} />
     </div>
   );
 }

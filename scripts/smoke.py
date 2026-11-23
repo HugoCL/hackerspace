@@ -28,6 +28,7 @@ began and is still the same process (`next dev` can sit in its own group and out
 
 import hashlib
 import os
+import re
 import signal
 import socket
 import subprocess
@@ -193,6 +194,12 @@ def check():
                 expect(
                     page.get_by_role("heading", name="Código sin Fronteras", level=1)
                 ).to_be_visible()
+                profile_footer = page.get_by_role("contentinfo")
+                expect(profile_footer.get_by_text("Hackerspace", exact=True)).to_be_visible()
+                expect(profile_footer.get_by_role("link", name="Hackathones")).to_have_attribute("href", "/")
+                expect(profile_footer.get_by_text(re.compile(r"^© \d{4}$"))).to_be_visible()
+                expect(profile_footer.get_by_role("button", name="Pausar animación")).to_have_count(0)
+                expect(profile_footer.locator(".hs-footer-mark")).to_have_count(0)
                 breadcrumb = page.get_by_role("navigation", name="Ruta de navegación")
                 expect(breadcrumb.get_by_role("link", name="Explorar")).to_have_attribute("href", "/")
                 expect(breadcrumb.locator('[aria-current="page"]')).to_have_text("Código sin Fronteras")

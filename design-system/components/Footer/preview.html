@@ -1,4 +1,4 @@
-<!-- @dsCard group="Layout" height=460 width=1100 -->
+<!-- @dsCard group="Layout" height=540 width=1100 -->
 <!doctype html>
 <html lang="es">
 <head><meta charset="utf-8"><title>Footer</title></head>
@@ -7,14 +7,17 @@
 <script>
 var H = window.Hackerspace, h = React.createElement;
 ReactDOM.createRoot(document.getElementById('root')).render(
-  h(H.Footer, {
+  h(React.Fragment, null, h(H.Footer, {
     tagline: 'Un lugar en vivo para descubrir hackathones, formar equipo y mostrar lo que construiste.',
     columns: [
       { title: 'Explorar', links: [{ label: 'Hackathones' }, { label: 'Equipos' }, { label: 'Proyectos' }] },
       { title: 'Para agentes', links: [{ label: 'API y MCP' }, { label: 'Límites de uso' }, { label: 'Cómo trabaja el scout' }] },
       { title: 'Hackerspace', links: [{ label: 'Acerca de' }, { label: 'Código de conducta' }, { label: 'Privacidad' }] }
     ]
-  }));
+  }), h(H.Footer, {
+    variant: 'compact',
+    columns: [{ title: 'Explorar', links: [{ label: 'Hackathones', href: '/' }] }]
+  })));
 </script>
 </body>
 </html>

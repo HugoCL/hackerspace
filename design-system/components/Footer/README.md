@@ -1,6 +1,6 @@
 # Footer
 
-El pie de página, y el único lugar donde el nombre se mueve: "hacker" muta a otras palabras ("builders space", "dreamers space", "ai+humans space"…) y cada tres vuelve a juntarse en "hackerspace".
+La portada usa el pie animado, el único lugar donde el nombre se mueve: "hacker" muta a otras palabras ("builders space", "dreamers space", "ai+humans space"…) y cada tres vuelve a juntarse en "hackerspace". Las demás vistas de AppShell usan el pie compacto: marca fija, enlaces y año en una línea que se adapta al espacio disponible.
 
 ## La mutación
 - Arranca junto ("hackerspace"), se separa al mutar y cada tres palabras vuelve a juntarse. Junto se sostiene 4s; cada palabra, unos 3s.
@@ -40,4 +40,5 @@ El pie de página, y el único lugar donde el nombre se mueve: "hacker" muta a o
 - `tagline`: una frase que diga qué es Hackerspace.
 - `columns`: 2 a 4 grupos de enlaces (`{title, links: [{label, href}]}`), con los mismos nombres que la navegación. Solo enlaces que existen.
 - `note`: la línea legal; por defecto "© año Hackerspace".
+- `variant: 'compact'`: muestra los enlaces de `columns` sin sus encabezados, y por defecto solo «© año» junto a la marca. No muestra el lema ni controles de animación.
 - Va en el `footer` del AppShell, una vez por página.

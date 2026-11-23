@@ -719,6 +719,21 @@
   }
 
   function Footer(props) {
+    return h(props.variant === 'compact' ? CompactFooter : AnimatedFooter, props);
+  }
+
+  function CompactFooter(props) {
+    var links = (props.columns || []).flatMap(function (column) { return column.links; });
+    return h('footer', { className: cx('hs-footer', 'hs-footer--compact', props.className) },
+      h('div', { className: 'hs-footer-compact-inner' },
+        h('span', { className: 'hs-wordmark' },
+          h('span', { 'aria-hidden': true, className: 'hs-wordmark-mark' }), 'Hackerspace'),
+        links.length ? h('nav', { className: 'hs-footer-compact-links', 'aria-label': 'Pie de página' },
+          links.map(function (link, i) { return h('a', { key: i, href: link.href || '#', className: 'hs-footer-link' }, link.label); })) : null,
+        h('span', { className: 'hs-footer-note' }, props.note || '© ' + new Date().getFullYear())));
+  }
+
+  function AnimatedFooter(props) {
     var reduced = useReducedMotion();
     var pausedSt = React.useState(false);
     var words = props.words || MORPH_WORDS;

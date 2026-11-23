@@ -165,6 +165,10 @@ def check():
                 expect(teams.get_by_role("heading", name="Punto de Encuentro")).to_be_visible()
                 role_filter.clear()
                 expect(teams.get_by_role("listitem")).to_have_count(2)
+                role_filter.fill("rol inexistente")
+                expect(teams.locator(".hs-empty")).to_have_text("No encontramos equipos para ese rol.")
+                role_filter.clear()
+                expect(teams.get_by_role("listitem")).to_have_count(2)
                 teams.screenshot(path=str(ARTIFACTS / "teams-recruiting.png"))
                 clean_capture = "#clerk-components, nextjs-portal { visibility: hidden; }"
                 page.screenshot(path=str(ARTIFACTS / "teams-desktop.png"), full_page=True, style=clean_capture)

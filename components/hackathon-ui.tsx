@@ -3,12 +3,15 @@ import type { ReactNode } from "react";
 import type { Doc } from "@/convex/_generated/dataModel";
 
 const iconPaths = {
+  alert: "M12 4l9 16H3zM12 10v5M12 17.5v.5",
   arrow: "M4 12h15m-6-6 6 6-6 6",
   calendar: "M4 6h16v14H4zM8 3v6m8-6v6M4 11h16",
+  check: "M5 12.5l4.5 4.5L19 7.5",
   globe:
     "M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0ZM2 12h20M12 2a16 16 0 0 1 0 20 16 16 0 0 1 0-20Z",
   pin: "M20 10c0 5-8 11-8 11s-8-6-8-11a8 8 0 1 1 16 0Zm-5 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
   search: "M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0Zm-2 4 6 6",
+  x: "M6 6l12 12M18 6L6 18",
 };
 
 export function Icon({ name }: { name: keyof typeof iconPaths }) {

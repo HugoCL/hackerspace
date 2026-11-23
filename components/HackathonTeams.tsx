@@ -29,6 +29,7 @@ import {
 } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { Icon } from "./hackathon-ui";
 
 type TeamDetails = Pick<
   Doc<"teams">,
@@ -104,7 +105,7 @@ function TeamForm({
       <label className="grid gap-1 text-sm" htmlFor={`${fieldId}-description`}>
         Descripción
         <Textarea
-          className="hs-input h-auto"
+          className="hs-input-control hs-textarea"
           defaultValue={team?.description}
           id={`${fieldId}-description`}
           maxLength={400}
@@ -122,18 +123,18 @@ function TeamForm({
           name="roles"
         />
       </label>
-      <label
-        className="flex items-center gap-2 text-sm"
-        htmlFor={`${fieldId}-recruiting`}
-      >
+      <label className="hs-check" htmlFor={`${fieldId}-recruiting`}>
         <Checkbox
+          className="hs-check-input data-checked:border-primary! data-checked:bg-primary!"
           checked={recruiting}
           id={`${fieldId}-recruiting`}
           onCheckedChange={(value) => setRecruiting(value === true)}
         >
-          <CheckboxIndicator aria-hidden="true">✓</CheckboxIndicator>
+          <CheckboxIndicator aria-hidden="true">
+            <Icon name="check" />
+          </CheckboxIndicator>
         </Checkbox>
-        Buscamos integrantes
+        <span className="hs-check-label">Buscamos integrantes</span>
       </label>
       {error && <p role="alert">{error}</p>}
       <div className="flex flex-wrap gap-2">
@@ -192,21 +193,14 @@ function ChatAvatar({ name }: { name: string }) {
   );
 }
 
-function ChatIcon({ back }: { back?: boolean }) {
+function ChatError({ message }: { message: string }) {
   return (
-    <svg
-      aria-hidden="true"
-      fill="none"
-      height="20"
-      width="20"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.5"
-    >
-      <path d={back ? "M19 12H5m6-6-6 6 6 6" : "m6 6 12 12M18 6 6 18"} />
-    </svg>
+    <div className="hs-alert hs-alert--danger" role="alert">
+      <Icon name="alert" />
+      <div className="hs-alert-text">
+        <p className="hs-alert-desc">{message}</p>
+      </div>
+    </div>
   );
 }
 
@@ -239,19 +233,24 @@ function ChatHeader({
             onClick={onBack}
             ref={focusBackButton}
           >
-            <ChatIcon back />
+            <span className="rotate-180">
+              <Icon name="arrow" />
+            </span>
           </Button>
         )}
         <div className="min-w-0 flex-1">
-          <DialogTitle className="truncate text-lg font-semibold" title={team}>
+          <DialogTitle
+            className="hs-dialog-title truncate text-nowrap!"
+            title={team}
+          >
             {team}
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">
+          <p className="hs-dialog-desc text-xs">
             {thread ? "Conversación privada" : "Conversaciones"}
           </p>
         </div>
         <DialogClose aria-label="Cerrar" className={chatIconClass}>
-          <ChatIcon />
+          <Icon name="x" />
         </DialogClose>
       </div>
       {contact && (
@@ -355,12 +354,9 @@ function TeamConversation({
         }
       />
       {addition.error && (
-        <p
-          className="px-4 pt-2 text-sm text-[var(--ui-destructive)]"
-          role="alert"
-        >
-          {addition.error}
-        </p>
+        <div className="shrink-0 px-4 pt-2">
+          <ChatError message={addition.error} />
+        </div>
       )}
       <div
         className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4"
@@ -377,9 +373,11 @@ function TeamConversation({
             Cargando mensajes…
           </p>
         ) : ordered.length === 0 ? (
-          <p className="m-auto max-w-60 text-center text-sm text-muted-foreground">
-            Rompe el hielo: cuéntales qué te gustaría construir.
-          </p>
+          <div className="hs-empty m-auto max-w-64 py-4!">
+            <p className="hs-empty-desc m-0! text-sm">
+              Rompe el hielo: cuéntales qué te gustaría construir.
+            </p>
+          </div>
         ) : (
           <>
             {(messages.status === "CanLoadMore" || loadingOlder) && (
@@ -448,7 +446,7 @@ function TeamConversation({
             <Textarea
               aria-label="Mensaje"
               autoResize
-              className="min-h-10! max-h-32 resize-none! text-base! sm:text-sm!"
+              className="hs-input-control hs-textarea min-h-10! max-h-32 resize-none! text-base! sm:text-sm!"
               maxLength={1000}
               onChange={(event) => setBody(event.currentTarget.value)}
               onKeyDown={(event) => {
@@ -476,12 +474,9 @@ function TeamConversation({
             </Button>
           </div>
           {error && (
-            <p
-              className="mt-2 text-sm text-[var(--ui-destructive)]"
-              role="alert"
-            >
-              {error}
-            </p>
+            <div className="mt-2">
+              <ChatError message={error} />
+            </div>
           )}
         </form>
       )}
@@ -520,9 +515,9 @@ function TeamInbox({ team }: { team: Team }) {
             Cargando conversaciones…
           </p>
         ) : results.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">
-            Aún no hay conversaciones.
-          </p>
+          <div className="hs-empty m-4 py-6!">
+            <p className="hs-empty-desc m-0!">Aún no hay conversaciones.</p>
+          </div>
         ) : (
           <ul className="list-none divide-y divide-border border-b border-border p-0">
             {results.map(({ _id, displayName, lastMessage, lastMessageAt }) => (
@@ -580,8 +575,8 @@ function ConversationDialog({
       <DialogTrigger className="hs-btn hs-btn--secondary justify-self-start">
         {label}
       </DialogTrigger>
-      <DialogBackdrop />
-      <DialogContent className="fixed inset-y-0 right-0 left-auto z-50 m-0 flex h-dvh max-h-none w-full flex-col gap-0 overflow-hidden rounded-none border-0 bg-background p-0 shadow-none sm:max-w-[420px] sm:border-l sm:border-border">
+      <DialogBackdrop className="bg-foreground/55!" />
+      <DialogContent className="hs-dialog hs-dialog--drawer fixed inset-y-0 right-0 left-auto z-50 m-0! flex h-dvh! max-h-none! w-full! flex-col gap-0 overflow-hidden rounded-none! border-0! bg-background! p-0 shadow-none! sm:w-[420px]! sm:border-l! sm:border-border!">
         {children}
       </DialogContent>
     </Dialog>
@@ -660,18 +655,20 @@ export default function HackathonTeams({
             onChange={(event) => setRole(event.currentTarget.value)}
           />
         </label>
-        <label
-          className="flex min-h-8 items-center gap-2 text-sm"
-          htmlFor={filterId}
-        >
+        <label className="hs-check min-h-8 items-center!" htmlFor={filterId}>
           <Checkbox
+            className="hs-check-input data-checked:border-primary! data-checked:bg-primary!"
             checked={recruitingOnly}
             id={filterId}
             onCheckedChange={(value) => setRecruitingOnly(value === true)}
           >
-            <CheckboxIndicator aria-hidden="true">✓</CheckboxIndicator>
+            <CheckboxIndicator aria-hidden="true">
+              <Icon name="check" />
+            </CheckboxIndicator>
           </Checkbox>
-          Solo equipos que buscan integrantes
+          <span className="hs-check-label">
+            Solo equipos que buscan integrantes
+          </span>
         </label>
         {isAuthenticated && !creating && (
           <Button
@@ -700,22 +697,26 @@ export default function HackathonTeams({
           Cargando equipos…
         </p>
       ) : results.length === 0 ? (
-        <p className="mt-3" role="status">
-          {role.trim()
-            ? "No encontramos equipos para ese rol."
-            : recruitingOnly
-              ? "No hay equipos buscando integrantes."
-              : "Aún no hay equipos en esta hackathon."}
-        </p>
+        <div className="hs-empty" role="status">
+          <p className="hs-empty-title">
+            {role.trim()
+              ? "No encontramos equipos para ese rol."
+              : recruitingOnly
+                ? "No hay equipos buscando integrantes."
+                : "Aún no hay equipos en esta hackathon."}
+          </p>
+        </div>
       ) : (
         <ul
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
           aria-label="Equipos de la hackathon"
         >
           {results.map((team) => (
-            <li className="hs-card grid content-start gap-2" key={team._id}>
+            <li className="hs-card hs-tcard" key={team._id}>
               <h3 className="hs-tcard-title">{team.name}</h3>
-              <p className="text-sm">{team.description}</p>
+              <p className="hs-tcard-pitch line-clamp-none!">
+                {team.description}
+              </p>
               <span className="hs-badge hs-badge--neutral self-start">
                 {team.recruitingStatus === "recruiting"
                   ? "Busca integrantes"

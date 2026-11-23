@@ -64,18 +64,13 @@ function useMorphingWord(paused: boolean) {
 
     function next() {
       const from = state.word;
-      let to = HOME;
       if (from === HOME || state.sinceHome < JOIN_EVERY) {
-        to = WORDS[state.index % WORDS.length];
-        state.index++;
-        state.sinceHome++;
-      } else {
-        state.sinceHome = 0;
-      }
-      if (to !== HOME) {
+        const to = WORDS[state.index % WORDS.length];
         setMorph((previous) => ({ ...previous, phase: "out" }));
         timer = setTimeout(() => {
           state.word = to;
+          state.index++;
+          state.sinceHome++;
           setMorph({ text: to, word: to, phase: "in" });
           timer = setTimeout(next, 3200);
         }, 220);
@@ -83,6 +78,7 @@ function useMorphingWord(paused: boolean) {
       }
 
       state.word = HOME;
+      state.sinceHome = 0;
       let start: number | null = null;
       let last = 0;
       function step(now: number) {

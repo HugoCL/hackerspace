@@ -663,19 +663,21 @@
       if (paused || !words.length) return;
       var timer, raf, alive = true;
       function next() {
-        var s = pos.current, from = s.word, to;
-        if (from !== home && s.n >= every) { to = home; s.n = 0; }
-        else { to = words[s.i % words.length]; s.i++; s.n++; }
+        var s = pos.current, from = s.word, joining = from !== home && s.n >= every;
+        var to = joining ? home : words[s.i % words.length];
         if (to !== home) {
           st[1](function (prev) { return { text: prev.text, word: prev.word, phase: 'out' }; });
           timer = setTimeout(function () {
             s.word = to;
+            s.i++; s.n++;
             st[1]({ text: to, word: to, phase: 'in' });
             timer = setTimeout(next, 3200);
           }, 220);
           return;
         }
         s.word = home;
+        if (joining) s.n = 0;
+        else { s.i++; s.n++; }
         var start = null, last = 0;
         function step(t) {
           if (!alive) return;

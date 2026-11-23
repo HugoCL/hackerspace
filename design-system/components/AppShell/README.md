@@ -7,6 +7,8 @@ El marco de toda vista: barra superior con el nombre, navegación principal y ac
 - `aside` solo cuando el contenido lateral es **vivo o de contexto** (quién está viendo, feed de actividad, tu equipo). Bajo 900px el aside cae debajo del contenido principal.
 - `banner` para un aviso global en vivo ("Santiago Hacks comienza en 2 días"). Uno a la vez.
 
+- `footer` recibe el `Footer`, una vez por página.
+
 ## Navegación
 Orden recomendado: **Explorar · Equipos · Proyectos · Mis hackathones**. `count` en la nav solo para cosas en vivo (p. ej. invitaciones pendientes) y se pinta con `hs-live-ink`.
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { SampleEvent } from "@/app/hackathons/sample-events";
+import SiteFooter from "./SiteFooter";
 
 const iconPaths = {
   arrow: "M4 12h15m-6-6 6 6-6 6",
@@ -69,6 +70,7 @@ export function AppShell({
           <aside className="hs-shell-aside prototype-aside">{aside}</aside>
         )}
       </div>
+      <SiteFooter />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"Hackerspace","components":[{"name":"AppShell"},{"name":"PageHeader"},{"name":"Section"},{"name":"Stack"},{"name":"Grid"},{"name":"Button"},{"name":"Tabs"},{"name":"Input"},{"name":"Select"},{"name":"Icon"},{"name":"Badge"},{"name":"Card"},{"name":"Avatar"},{"name":"AvatarStack"},{"name":"EmptyState"},{"name":"PresencePill"},{"name":"Countdown"},{"name":"AgentTag"},{"name":"ActivityFeed"},{"name":"TeamSlots"},{"name":"HackathonCard"},{"name":"TeamCard"},{"name":"ProjectCard"},{"name":"Checkbox"},{"name":"RadioGroup"},{"name":"Switch"},{"name":"Textarea"},{"name":"SegmentedControl"},{"name":"Separator"},{"name":"Skeleton"},{"name":"Progress"},{"name":"Table"},{"name":"Accordion"},{"name":"Alert"},{"name":"Tooltip"},{"name":"Toaster"},{"name":"Breadcrumb"},{"name":"Pagination"},{"name":"Dialog"},{"name":"Drawer"},{"name":"Menu"},{"name":"Popover"}]} */
+/* @ds-bundle: {"format":4,"namespace":"Hackerspace","components":[{"name":"AppShell"},{"name":"PageHeader"},{"name":"Section"},{"name":"Stack"},{"name":"Grid"},{"name":"Button"},{"name":"Tabs"},{"name":"Input"},{"name":"Select"},{"name":"Icon"},{"name":"Badge"},{"name":"Card"},{"name":"Avatar"},{"name":"AvatarStack"},{"name":"EmptyState"},{"name":"PresencePill"},{"name":"Countdown"},{"name":"AgentTag"},{"name":"ActivityFeed"},{"name":"TeamSlots"},{"name":"HackathonCard"},{"name":"TeamCard"},{"name":"ProjectCard"},{"name":"Checkbox"},{"name":"RadioGroup"},{"name":"Switch"},{"name":"Textarea"},{"name":"SegmentedControl"},{"name":"Separator"},{"name":"Skeleton"},{"name":"Progress"},{"name":"Table"},{"name":"Accordion"},{"name":"Alert"},{"name":"Tooltip"},{"name":"Toaster"},{"name":"Breadcrumb"},{"name":"Pagination"},{"name":"Dialog"},{"name":"Drawer"},{"name":"Menu"},{"name":"Popover"},{"name":"Footer"}]} */
 (function () {
   var React = window.React;
   var h = React.createElement;
@@ -63,7 +63,8 @@
       props.banner ? h('div', { className: 'hs-shell-banner' }, props.banner) : null,
       h('div', { className: cx('hs-shell-body', props.aside && 'hs-shell-body--aside') },
         h('main', { className: 'hs-shell-main' }, props.children),
-        props.aside ? h('aside', { className: 'hs-shell-aside' }, props.aside) : null));
+        props.aside ? h('aside', { className: 'hs-shell-aside' }, props.aside) : null),
+      props.footer || null);
   }
 
   function PageHeader(props) {
@@ -641,6 +642,79 @@
   }
 
 
+  /* ---------- Footer ---------- */
+  var MORPH_WORDS = ['builders', 'dreamers', 'ai+humans', 'never settlers', 'tinkerers', 'first-timers', 'night owls', 'misfits', 'makers', 'weekend founders', 'what-if'];
+  var MORPH_POOL = 'abcdefghijklmnopqrstuvwxyz+';
+  function morphFrame(from, to, p) {
+    var len = Math.round(from.length + (to.length - from.length) * p);
+    var done = Math.floor(p * len), out = '';
+    for (var i = 0; i < len; i++) {
+      if (i < done) out += to[i] || '';
+      else if ((to[i] || from[i]) === ' ') out += ' ';
+      else out += MORPH_POOL[Math.floor(Math.random() * MORPH_POOL.length)];
+    }
+    return out;
+  }
+  function useMorph(words, opts) {
+    var home = opts.home, every = opts.joinEvery, paused = opts.paused;
+    var st = React.useState(home);
+    var pos = React.useRef({ i: 0, n: 0, word: home });
+    React.useEffect(function () {
+      if (paused) return;
+      var timer, raf, alive = true;
+      function next() {
+        var s = pos.current, to;
+        if (s.word !== home && s.n >= every) { to = home; s.n = 0; }
+        else { to = words[s.i % words.length]; s.i++; s.n++; }
+        var from = s.word, start = null, last = 0;
+        s.word = to;
+        function step(t) {
+          if (!alive) return;
+          if (start === null) start = t;
+          var p = Math.min(1, (t - start) / 700);
+          if (p === 1) { st[1](to); timer = setTimeout(next, to === home ? 4200 : 2400); return; }
+          if (t - last > 45) { last = t; st[1](morphFrame(from, to, p)); }
+          raf = requestAnimationFrame(step);
+        }
+        raf = requestAnimationFrame(step);
+      }
+      timer = setTimeout(next, pos.current.word === home ? 3000 : 1200);
+      return function () { alive = false; clearTimeout(timer); cancelAnimationFrame(raf); st[1](pos.current.word); };
+    }, [paused]);
+    return { text: st[0], split: pos.current.word !== home };
+  }
+  function prefersReducedMotion() {
+    return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function Footer(props) {
+    var reduced = React.useState(prefersReducedMotion)[0];
+    var pausedSt = React.useState(false);
+    var words = props.words || MORPH_WORDS;
+    var still = props.animate === false || reduced;
+    var m = useMorph(words, { home: 'hacker', joinEvery: props.joinEvery || 3, paused: still || pausedSt[0] });
+    return h('footer', { className: cx('hs-footer', props.className) },
+      h('div', { className: 'hs-footer-inner' },
+        h('div', { className: 'hs-footer-top' },
+          h('p', { className: cx('hs-footer-mark', m.split && 'hs-footer-mark--split') },
+            h('span', { className: 'hs-sr-only' }, 'Hackerspace'),
+            h('span', { 'aria-hidden': true },
+              h('span', { className: 'hs-footer-word' }, m.text),
+              h('span', { className: 'hs-footer-gap' }),
+              'space')),
+          props.tagline ? h('p', { className: 'hs-footer-tagline' }, props.tagline) : null),
+        props.columns && props.columns.length ? h('nav', { className: 'hs-footer-cols', 'aria-label': 'Pie de página' },
+          props.columns.map(function (c, i) {
+            return h('div', { key: i, className: 'hs-footer-col' },
+              h('div', { className: 'hs-footer-col-title' }, c.title),
+              h('ul', null, c.links.map(function (l, j) { return h('li', { key: j }, h('a', { href: l.href || '#', className: 'hs-footer-link' }, l.label)); })));
+          })) : null,
+        h('div', { className: 'hs-footer-base' },
+          h('span', null, props.note || '© ' + new Date().getFullYear() + ' Hackerspace'),
+          still ? null : h('button', { type: 'button', className: 'hs-footer-pause', 'aria-pressed': pausedSt[0], onClick: function () { pausedSt[1](!pausedSt[0]); } },
+            pausedSt[0] ? 'Reanudar animación' : 'Pausar animación'))));
+  }
+
   window.Hackerspace = Object.assign(window.Hackerspace || {}, {
     AppShell: AppShell, PageHeader: PageHeader, Section: Section, Stack: Stack, Grid: Grid,
     Button: Button, Tabs: Tabs, Input: Input, Select: Select, Icon: Icon,
@@ -648,6 +722,6 @@
     PresencePill: PresencePill, Countdown: Countdown, AgentTag: AgentTag, ActivityFeed: ActivityFeed, TeamSlots: TeamSlots,
     HackathonCard: HackathonCard, TeamCard: TeamCard, ProjectCard: ProjectCard,
     Checkbox: Checkbox, RadioGroup: RadioGroup, Switch: Switch, Textarea: Textarea, SegmentedControl: SegmentedControl, Separator: Separator, Skeleton: Skeleton, Progress: Progress, Table: Table, Accordion: Accordion, Alert: Alert, Tooltip: Tooltip, Toaster: Toaster, Breadcrumb: Breadcrumb, Pagination: Pagination, Dialog: Dialog, Drawer: Drawer, Menu: Menu, Popover: Popover,
-    toast: toast, dismissToast: dismissToast
+    toast: toast, dismissToast: dismissToast, Footer: Footer
   });
 })();

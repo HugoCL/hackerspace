@@ -6,8 +6,13 @@ import { defineApp } from "convex/server";
 import { v } from "convex/values";
 
 const app = defineApp({
-  // Optional: Firecrawl answers anonymous requests with a lower rate limit.
-  env: { FIRECRAWL_API_KEY: v.optional(v.string()) },
+  env: {
+    // Optional: Firecrawl answers anonymous requests with a lower rate limit.
+    FIRECRAWL_API_KEY: v.optional(v.string()),
+    // Comma-separated Clerk tokenIdentifiers (`<issuer>|<user id>`) allowed to review the
+    // Scout queue. Unset means nobody can review.
+    SCOUT_REVIEWERS: v.optional(v.string()),
+  },
 });
 // Schema changes and backfills: see convex/migrations.ts.
 app.use(migrations);

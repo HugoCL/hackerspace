@@ -14,36 +14,7 @@ import {
 } from "./_generated/server";
 import { teamDetails } from "./schema";
 import { legacyLookingFor, lookingForLimit, teamSearchText } from "./teamText";
-
-async function findUser(ctx: QueryCtx | MutationCtx, identityKey: string) {
-  return ctx.db
-    .query("users")
-    .withIndex("by_identityKey", (q) => q.eq("identityKey", identityKey))
-    .unique();
-}
-
-async function requireIdentity(ctx: MutationCtx) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new ConvexError("Inicia sesión para continuar.");
-  return identity;
-}
-
-async function ensureUser(
-  ctx: MutationCtx,
-  identity: Awaited<ReturnType<typeof requireIdentity>>,
-) {
-  const existing = await findUser(ctx, identity.tokenIdentifier);
-  return (
-    existing?._id ??
-    ctx.db.insert("users", {
-      identityKey: identity.tokenIdentifier,
-      displayName: (identity.name || identity.nickname || "Participante").slice(
-        0,
-        80,
-      ),
-    })
-  );
-}
+import { ensureUser, findUser, requireIdentity } from "./users";
 
 async function requireOwnedTeam(ctx: MutationCtx, teamId: Id<"teams">) {
   const identity = await requireIdentity(ctx);

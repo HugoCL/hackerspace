@@ -16,9 +16,11 @@ import type * as presence from "../presence.js";
 import type * as sampleHackathons from "../sampleHackathons.js";
 import type * as scout from "../scout.js";
 import type * as scoutExtraction from "../scoutExtraction.js";
+import type * as scoutReview from "../scoutReview.js";
 import type * as seed from "../seed.js";
 import type * as teamText from "../teamText.js";
 import type * as teams from "../teams.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -35,9 +37,11 @@ declare const fullApi: ApiFromModules<{
   sampleHackathons: typeof sampleHackathons;
   scout: typeof scout;
   scoutExtraction: typeof scoutExtraction;
+  scoutReview: typeof scoutReview;
   seed: typeof seed;
   teamText: typeof teamText;
   teams: typeof teams;
+  users: typeof users;
 }>;
 
 /**

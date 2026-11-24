@@ -4,7 +4,7 @@ import { AppShell } from "@/components/hackathon-ui";
 export default function Home() {
   return (
     <AppShell
-      exploring
+      current="explore"
       footerVariant="animated"
       year={new Date().getFullYear()}
     >

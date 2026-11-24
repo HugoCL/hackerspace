@@ -1,29 +1,11 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-const modality = v.union(
+export const modality = v.union(
   v.literal("inPerson"),
   v.literal("hybrid"),
   v.literal("virtual"),
 );
-
-const hackathons = defineTable({
-  slug: v.string(),
-  title: v.string(),
-  modality,
-  dates: v.optional(v.string()),
-  endsOn: v.optional(v.string()),
-  location: v.optional(v.string()),
-  organizer: v.string(),
-  summary: v.string(),
-  topics: v.array(v.string()),
-  guidelines: v.optional(v.string()),
-  rules: v.optional(v.string()),
-  officialUrl: v.optional(v.string()),
-  isSample: v.boolean(),
-})
-  .index("by_slug", ["slug"])
-  .index("by_ends_on", ["endsOn"]);
 
 // What the Scout proposes for a hackathon profile. Only title and officialUrl are required:
 // anything the source did not back stays absent.
@@ -59,6 +41,40 @@ export const scoutProvenance = v.object({
   evidenceExcerpt: v.optional(v.string()),
 });
 
+const hackathons = defineTable({
+  slug: v.string(),
+  title: v.string(),
+  modality,
+  dates: v.optional(v.string()),
+  endsOn: v.optional(v.string()),
+  location: v.optional(v.string()),
+  organizer: v.string(),
+  summary: v.string(),
+  topics: v.array(v.string()),
+  guidelines: v.optional(v.string()),
+  rules: v.optional(v.string()),
+  officialUrl: v.optional(v.string()),
+  isSample: v.boolean(),
+  // Set on profiles a reviewer approved from a Scout candidate.
+  canonicalEventKey: v.optional(v.string()),
+  provenance: v.optional(v.array(scoutProvenance)),
+})
+  .index("by_slug", ["slug"])
+  .index("by_ends_on", ["endsOn"])
+  .index("by_canonicalEventKey", ["canonicalEventKey"]);
+
+const candidate = {
+  canonicalEventKey: v.string(),
+  proposal: scoutProposal,
+  provenance: v.array(scoutProvenance),
+  discoveredFromUrl: v.optional(v.string()),
+  // Another candidate with the same official URL but a different start date.
+  possibleDuplicateOf: v.optional(v.id("scoutCandidates")),
+  discoveredAt: v.number(),
+  lastSeenAt: v.number(),
+};
+const decision = { reviewedBy: v.id("users"), reviewedAt: v.number() };
+
 export const teamDetails = v.object({
   name: v.string(),
   description: v.string(),
@@ -73,22 +89,23 @@ export const joinRequestStatus = v.union(
 
 export default defineSchema({
   hackathons,
-  // Unreviewed Scout findings. Never read by the public catalog.
-  scoutCandidates: defineTable({
-    canonicalEventKey: v.string(),
-    reviewStatus: v.union(
-      v.literal("pending"),
-      v.literal("approved"),
-      v.literal("rejected"),
+  // Scout findings, pending until a reviewer decides. Never read by the public catalog.
+  scoutCandidates: defineTable(
+    v.union(
+      v.object({ reviewStatus: v.literal("pending"), ...candidate }),
+      v.object({
+        reviewStatus: v.literal("approved"),
+        ...candidate,
+        ...decision,
+        hackathonId: v.id("hackathons"),
+      }),
+      v.object({
+        reviewStatus: v.literal("rejected"),
+        ...candidate,
+        ...decision,
+      }),
     ),
-    proposal: scoutProposal,
-    provenance: v.array(scoutProvenance),
-    discoveredFromUrl: v.optional(v.string()),
-    // Another candidate with the same official URL but a different start date.
-    possibleDuplicateOf: v.optional(v.id("scoutCandidates")),
-    discoveredAt: v.number(),
-    lastSeenAt: v.number(),
-  })
+  )
     .index("by_canonicalEventKey", ["canonicalEventKey"])
     .index("by_reviewStatus_and_discoveredAt", [
       "reviewStatus",

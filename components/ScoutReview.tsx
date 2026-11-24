@@ -261,6 +261,12 @@ function CandidateCard({
   const reject = useMutation(api.scoutReview.reject);
   const [pending, setPending] = useState<"approve" | "reject" | null>(null);
   const [error, setError] = useState("");
+  // The queue is live, so a Scout rerun can rewrite the card while the reviewer checks the source.
+  // Approval stays tied to the revision the reviewer acknowledged.
+  const [reviewedRevision, setReviewedRevision] = useState(
+    candidate.lastSeenAt,
+  );
+  const revised = candidate.lastSeenAt !== reviewedRevision;
   const { proposal, missingRequired } = candidate;
   const titleId = `candidate-${candidate._id}`;
   const officialUrl = safeUrl(proposal.officialUrl);
@@ -291,7 +297,7 @@ function CandidateCard({
     void decide("approve", async () => {
       const { slug } = await approve({
         candidateId: candidate._id,
-        seenAt: candidate.lastSeenAt,
+        seenAt: reviewedRevision,
         completion: {
           modality:
             modality && modality in modalityLabels
@@ -412,6 +418,27 @@ function CandidateCard({
         onSubmit={submit}
       >
         <Completion missing={missingRequired} />
+        {revised && (
+          <div className="hs-alert" role="status">
+            <Icon name="alert" />
+            <div className="hs-alert-text">
+              <p className="hs-alert-title">Hack actualizó este candidato</p>
+              <p className="hs-alert-desc">
+                Volvió a encontrarlo y sus datos cambiaron. Revísalos de nuevo
+                antes de aprobar.
+              </p>
+            </div>
+            <Button
+              className="hs-btn hs-btn--secondary"
+              onClick={() => {
+                setReviewedRevision(candidate.lastSeenAt);
+                setError("");
+              }}
+            >
+              Ya los revisé
+            </Button>
+          </div>
+        )}
         {error && (
           <div className="hs-alert hs-alert--danger" role="alert">
             <Icon name="alert" />
@@ -423,7 +450,7 @@ function CandidateCard({
         <div className="flex flex-wrap gap-2">
           <Button
             className="hs-btn hs-btn--primary"
-            disabled={pending !== null}
+            disabled={pending !== null || revised}
             type="submit"
           >
             {pending === "approve" ? "Publicando…" : "Aprobar y publicar"}

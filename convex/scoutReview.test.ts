@@ -87,7 +87,11 @@ it("lets only listed reviewers read the queue and decide", async () => {
       "No tienes acceso",
     );
     await expect(
-      viewer.mutation(api.scoutReview.approve, { candidateId, completion }),
+      viewer.mutation(api.scoutReview.approve, {
+        candidateId,
+        seenAt: retrievedAt,
+        completion,
+      }),
     ).rejects.toThrow("No tienes acceso");
     await expect(
       viewer.mutation(api.scoutReview.reject, { candidateId }),
@@ -133,7 +137,7 @@ it("shows each pending candidate with its sources, missing fields and duplicates
   expect(newest.possibleDuplicateOf).toEqual({
     title: "Santiago Hacks 2027",
     officialUrl,
-    dates: undefined,
+    dates: "hasta 29 nov 2026",
   });
   expect(sameTitleAsSample.publishedMatch).toEqual({
     reason: "sameTitle",
@@ -149,6 +153,7 @@ it("approving publishes a visible profile with provenance and links both records
 
   const approved = await reviewer.mutation(api.scoutReview.approve, {
     candidateId: candidate._id,
+    seenAt: candidate.lastSeenAt,
     completion,
   });
 
@@ -197,11 +202,13 @@ it("creates one profile however many times an edition is approved", async () => 
   const [first] = await record(observation());
   const once = await reviewer.mutation(api.scoutReview.approve, {
     candidateId: first._id,
+    seenAt: first.lastSeenAt,
     completion,
   });
 
   const again = await reviewer.mutation(api.scoutReview.approve, {
     candidateId: first._id,
+    seenAt: first.lastSeenAt,
   });
   expect(again).toEqual(once);
 
@@ -210,6 +217,7 @@ it("creates one profile however many times an edition is approved", async () => 
   const second = await t.run((ctx) => ctx.db.insert("scoutCandidates", copy));
   const linked = await reviewer.mutation(api.scoutReview.approve, {
     candidateId: second,
+    seenAt: copy.lastSeenAt,
   });
 
   expect(linked).toEqual(once);
@@ -224,11 +232,15 @@ it("refuses to approve while a required field is missing", async () => {
   const [candidate] = await record(observation());
 
   await expect(
-    reviewer.mutation(api.scoutReview.approve, { candidateId: candidate._id }),
+    reviewer.mutation(api.scoutReview.approve, {
+      candidateId: candidate._id,
+      seenAt: candidate.lastSeenAt,
+    }),
   ).rejects.toThrow("Completa antes de aprobar");
   await expect(
     reviewer.mutation(api.scoutReview.approve, {
       candidateId: candidate._id,
+      seenAt: candidate.lastSeenAt,
       completion: { ...completion, summary: "   " },
     }),
   ).rejects.toThrow("resumen");
@@ -241,6 +253,7 @@ it("keeps the Scout's value when a completion repeats a field it backed", async 
 
   const { slug } = await reviewer.mutation(api.scoutReview.approve, {
     candidateId: candidate._id,
+    seenAt: candidate.lastSeenAt,
     completion,
   });
 
@@ -260,6 +273,7 @@ it("suffixes the slug when another profile already uses it", async () => {
   for (const candidate of candidates) {
     const { slug } = await reviewer.mutation(api.scoutReview.approve, {
       candidateId: candidate._id,
+      seenAt: candidate.lastSeenAt,
       completion,
     });
     slugs.push(slug);
@@ -281,6 +295,7 @@ it("writes the dates like the sample profiles", async () => {
       { startsOn: "2026-12-30", endsOn: "2027-01-02" },
       "30 dic 2026 – 2 ene 2027",
     ],
+    [{ startsOn: undefined, endsOn: "2026-12-02" }, "hasta 2 dic 2026"],
   ] as const;
 
   for (const [index, [dates, expected]] of cases.entries()) {
@@ -289,12 +304,29 @@ it("writes the dates like the sample profiles", async () => {
     );
     const { slug } = await reviewer.mutation(api.scoutReview.approve, {
       candidateId: candidates[index]._id,
+      seenAt: candidates[index].lastSeenAt,
       completion,
     });
     const profile = await t.query(api.hackathons.bySlug, { slug });
     expect(profile?.dates).toBe(expected);
     expect(profile?.endsOn).toBe(dates.endsOn ?? dates.startsOn);
   }
+});
+
+it("refuses an approval of data the Scout replaced after the reviewer saw it", async () => {
+  const { reviewer, record, hackathons } = setup();
+  const [shown] = await record(observation());
+  vi.setSystemTime(new Date(retrievedAt + 1000));
+  await record(observation({ rules: "Equipos de hasta diez personas." }));
+
+  await expect(
+    reviewer.mutation(api.scoutReview.approve, {
+      candidateId: shown._id,
+      seenAt: shown.lastSeenAt,
+      completion,
+    }),
+  ).rejects.toThrow("Revísalo de nuevo");
+  expect(await hackathons()).toEqual([]);
 });
 
 it("rejecting records the decision without touching hackathons", async () => {
@@ -321,6 +353,7 @@ it("rejecting records the decision without touching hackathons", async () => {
   await expect(
     reviewer.mutation(api.scoutReview.approve, {
       candidateId: candidate._id,
+      seenAt: candidate.lastSeenAt,
       completion,
     }),
   ).rejects.toThrow("rechazado");
@@ -331,6 +364,7 @@ it("does not reject an approved candidate", async () => {
   const [candidate] = await record(observation());
   await reviewer.mutation(api.scoutReview.approve, {
     candidateId: candidate._id,
+    seenAt: candidate.lastSeenAt,
     completion,
   });
 
@@ -344,6 +378,7 @@ it("only bumps lastSeenAt when the Scout sees an approved candidate again", asyn
   const [candidate] = await record(observation());
   const { slug } = await reviewer.mutation(api.scoutReview.approve, {
     candidateId: candidate._id,
+    seenAt: candidate.lastSeenAt,
     completion,
   });
   const profile = await t.query(api.hackathons.bySlug, { slug });

@@ -10,7 +10,7 @@ Permitir que una persona revisora consulte la cola, contraste las fuentes oficia
 - [x] Aprobar crea un perfil visible con procedencia, registra la decisión y vincula ambos registros. Rechazar registra la decisión sin publicar.
 - [ ] Probar aprobaciones repetidas y dos revisiones de la misma edición. Solo se crea un perfil. Demostrar ambos desenlaces con la cola y acordar el criterio humano de publicación antes de automatizar la búsqueda periódica.
 
-## Criterio de publicación (propuesta, falta confirmar con Hugo)
+## Criterio de publicación
 
 Aprobar un candidato solo si se cumple todo lo siguiente:
 
@@ -18,4 +18,6 @@ Aprobar un candidato solo si se cumple todo lo siguiente:
 - Es un único evento de construcción con fecha, en Chile, que todavía no termina.
 - Las bases y reglas coinciden con la fuente o quedan vacías. Nunca se escriben a mano.
 
-- [ ] Criterio confirmado con Hugo.
+- [x] Criterio confirmado con Hugo (2026-11-23).
+
+Pendiente: mostrar ambos desenlaces en `/scout` con una sesión de revisor iniciada en el navegador. Clerk pidió un desafío de Cloudflare al registrar una cuenta de prueba, así que esa demostración queda para una persona.

@@ -114,6 +114,7 @@ export const queue = query({
           provenance: candidate.provenance,
           discoveredFromUrl: candidate.discoveredFromUrl,
           discoveredAt: candidate.discoveredAt,
+          lastSeenAt: candidate.lastSeenAt,
           missingRequired: missingRequired(candidate.proposal),
           possibleDuplicateOf: other
             ? {
@@ -153,11 +154,15 @@ const MONTHS = [
 
 // "13–14 mar 2027", "30 mar – 2 abr 2027", "10 abr 2027", like the sample profiles.
 function displayDates(startsOn?: string, endsOn?: string) {
-  if (!startsOn) return undefined;
   const day = (date: string) => {
     const [year, month, dayOfMonth] = date.split("-").map(Number);
     return { year, month: MONTHS[month - 1], day: dayOfMonth };
   };
+  if (!startsOn) {
+    if (!endsOn) return undefined;
+    const end = day(endsOn);
+    return `hasta ${end.day} ${end.month} ${end.year}`;
+  }
   const start = day(startsOn);
   const end = endsOn && endsOn > startsOn ? day(endsOn) : undefined;
   if (!end) return `${start.day} ${start.month} ${start.year}`;
@@ -288,15 +293,22 @@ async function existingCandidate(
 export const approve = mutation({
   args: {
     candidateId: v.id("scoutCandidates"),
+    // The candidate's lastSeenAt as the reviewer saw it: a Scout rerun replaces a pending
+    // proposal, and approval must not publish data nobody reviewed.
+    seenAt: v.number(),
     completion: v.optional(completion),
   },
-  handler: async (ctx, { candidateId, completion }) => {
+  handler: async (ctx, { candidateId, seenAt, completion }) => {
     const identity = await requireReviewer(ctx);
     const candidate = await existingCandidate(ctx, candidateId);
     if (candidate.reviewStatus === "approved")
       return profileLink(ctx, candidate.hackathonId);
     if (candidate.reviewStatus === "rejected")
       throw new ConvexError("Este candidato ya fue rechazado.");
+    if (candidate.lastSeenAt !== seenAt)
+      throw new ConvexError(
+        "Hack volvió a revisar este candidato y sus datos cambiaron. Revísalo de nuevo antes de aprobar.",
+      );
     const hackathonId =
       (await publishedEdition(ctx, candidate.canonicalEventKey))?._id ??
       (await publish(ctx, candidate, completion));

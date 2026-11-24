@@ -291,6 +291,7 @@ function CandidateCard({
     void decide("approve", async () => {
       const { slug } = await approve({
         candidateId: candidate._id,
+        seenAt: candidate.lastSeenAt,
         completion: {
           modality:
             modality && modality in modalityLabels
